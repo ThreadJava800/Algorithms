@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 typedef int Elem_t;
+
+Elem_t DEFAULT_MAX = INT_MAX;
 
 struct Node_t {
     Elem_t key;
@@ -30,7 +33,7 @@ struct Node_t *rotateRight(struct Node_t *node);
 
 struct Node_t *_addKey(struct Node_t *node, Elem_t key);
 void            addKey(struct AVL_t *tree, Elem_t key);
-struct Node_t *getNext(struct Node_t *node, Elem_t cmpEl);
+Elem_t          getNext(struct Node_t *node, Elem_t cmpEl);
 
 void graphNode(struct Node_t *node, FILE *tempFile);
 void drawConnections(struct Node_t *node);
@@ -195,9 +198,21 @@ void addKey (struct AVL_t *tree, Elem_t key) {
     tree->root = _addKey(tree->root, key);
 }
 
+Elem_t getNext(struct Node_t *node, Elem_t cmpEl) {
+    if (!node) return DEFAULT_MAX;
 
-struct Node_t *getNext(struct Node_t *node, Elem_t cmpEl) {
-    ON_ERROR(!node, "Nullptr", NULL);
+    Elem_t min1 = DEFAULT_MAX;
+    Elem_t min2 = DEFAULT_MAX;
+
+    if (node->left)  min1 = getNext(node->left,  cmpEl);
+    if (node->right) min2 = getNext(node->right, cmpEl);
+
+    if (node->key >= cmpEl) {
+        int mini = (min1 < min2 ? min1 : min2);
+        return (mini < node->key ? mini : node->key);
+    }
+
+    return (min1 < min2 ? min1 : min2);
 }
 
 void graphNode(struct Node_t *node, FILE *tempFile) {
@@ -284,7 +299,7 @@ int main() {
     struct AVL_t *tree = treeCtor();
 
     addKey(tree, 17);
-    addKey(tree, 16);
+    // addKey(tree, 16);
     addKey(tree, 18);
     addKey(tree, 14);
     addKey(tree, 20);
@@ -297,6 +312,8 @@ int main() {
     addKey(tree, 200);
 
     graphDump(tree->root);
+
+    printf("%d\n", getNext(tree->root, 16));
 
     treeDtor(tree);
 
