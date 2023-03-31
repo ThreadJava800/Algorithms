@@ -36,11 +36,11 @@ void            addKey(struct AVL_t *tree, Elem_t key);
 Elem_t          getNext(struct Node_t *node, Elem_t cmpEl);
 
 void graphNode(struct Node_t *node, FILE *tempFile);
-void drawConnections(struct Node_t *node);
+void drawConnections(struct Node_t *node, FILE *tempFile);
 void graphDump(struct Node_t *node);
 
 //=========CONTEST STAFF=============
-void controller();
+void controller(struct AVL_t *tree);
 
 
 #define INPUT_CHECK(readFunc, res) {        \
@@ -266,26 +266,44 @@ void graphDump(struct Node_t *node) {
     system("dot -Tsvg temp.dot > graph.png");
 }
 
-void controller() {
-    int n = 0;
+void controller(struct AVL_t *tree) {
+    int n = 0, followedQuest = 0, result = 0;
     INPUT_CHECK(scanf("%d", &n), 1);
 
     for (int i = 0; i < n; i++) {
-        unsigned char oper = '\0';
-        INPUT_CHECK(scanf("%c", &oper), 1);
+        char buffer[10] = "";
+        INPUT_CHECK(scanf("%s", buffer), 1);
 
-        switch (oper)
+        switch (buffer[0])
         {
             case '+':
                 {
                 int value = 0;
                 INPUT_CHECK(scanf("%d", &value), 1);
+
+                if (followedQuest) {
+                    value = (value + result) % 1000000000;
+                    followedQuest = 0;
+                }
+
+                addKey(tree, value);
                 }
                 break;
             case '?':
                 {
                 int value = 0;
                 INPUT_CHECK(scanf("%d", &value), 1);
+
+                int res = getNext(tree->root, value);
+                followedQuest = 1;
+
+                if (res == DEFAULT_MAX) {
+                    printf("%d\n", -1);
+                    break;
+                }
+                else result = res;
+
+                printf("%d\n", result);
                 }
                 break;
             default:
@@ -295,27 +313,27 @@ void controller() {
 }
 
 int main() {
-    // controller();
     struct AVL_t *tree = treeCtor();
 
-    addKey(tree, 17);
-    // addKey(tree, 16);
-    addKey(tree, 18);
-    addKey(tree, 14);
-    addKey(tree, 20);
-    addKey(tree, 100);
-    addKey(tree, 19);
-    addKey(tree, 15);
-    addKey(tree, 13);
-    addKey(tree, 200);
-    addKey(tree, 90);
-    addKey(tree, 200);
+    controller(tree);
 
-    graphDump(tree->root);
+    // addKey(tree, 1);
+    // addKey(tree, 3);
+    // addKey(tree, 3);
 
-    printf("%d\n", getNext(tree->root, 16));
+    // int result = getNext(tree->root, 2);
+    // if (result == DEFAULT_MAX) result = -1;
+    // printf("%d\n", result);
 
-    treeDtor(tree);
+    // addKey(tree, 1);
+
+    // result = getNext(tree->root, 4);
+    // if (result == DEFAULT_MAX) result = -1;
+    // printf("%d\n", result);
+
+    // graphDump(tree->root); 
+
+    // treeDtor(tree);
 
     return 0;
 }
