@@ -25,6 +25,7 @@ void           nodeDtor(struct Node_t*root);
 void           treeDtor(struct AVL_t *tree);
 
 void _recountHeight(struct Node_t *node);
+int _getHeight(struct Node_t *node);
 int  _balanceFactor(struct Node_t *node);
 
 struct Node_t *balance(struct Node_t *node);
@@ -68,7 +69,7 @@ struct AVL_t  *treeCtor() {
 
 struct Node_t *nodeCtor(Elem_t key) {
     struct Node_t *leaf = (struct Node_t*) calloc(1, sizeof(struct Node_t));
-    ON_ERROR(!leaf, "Unable to alloc mem", NULL);
+    if(!leaf) return NULL;
 
     leaf->height = 0;
     leaf->key    = key;
@@ -79,7 +80,7 @@ struct Node_t *nodeCtor(Elem_t key) {
 }
 
 void nodeDtor(struct Node_t *root) {
-    ON_ERROR(!root, "Nullptr",);
+    if(!root) return;
 
     if (root->left)  nodeDtor(root->left);
     if (root->right) nodeDtor(root->right);
@@ -96,40 +97,31 @@ void treeDtor(struct AVL_t *tree) {
 }
 
 void _recountHeight(struct Node_t *node) {
-    ON_ERROR(!node, "Nullptr",);
+    int lH = _getHeight(node->left);
+    int rH = _getHeight(node->right);
 
-    if (!(node->left)) {
-        if (node->right) node->height = node->right->height + 1;
-        else node->height = 0;
-        return;
-    }
+    node->height = (lH <= rH ? 
+                    (rH + 1) : (lH + 1));
+}
 
-    if (!(node->right)) {
-        if (node->left) node->height = node->left->height + 1;
-        else node->height = 0;
-        return;
-    }
+int _getHeight(struct Node_t *node) {
+    if (!node) return 0;
 
-    node->height = (node->left->height <= node->right->height ? 
-                    (node->right->height + 1) : (node->left->height + 1));
+    return node->height;
 }
 
 int _balanceFactor(struct Node_t *node) {
-    ON_ERROR(!node, "Nullptr", -100);
+    if (!node) return 0;
 
-    if (!(node->left) || !(node->right)) return 0;
-
-    return node->left->height - node->right->height;
+    return _getHeight(node->left) - _getHeight(node->right);
 }
 
 struct Node_t *balance(struct Node_t *node) {
-    ON_ERROR(!node, "Nullptr", NULL);
-
     _recountHeight(node);
 
     if (_balanceFactor(node) == -2) {
         if (_balanceFactor(node->right) == 1) {
-            node->right = rotateRight(node->left);
+            node->right = rotateRight(node->right);
         }
         return rotateLeft(node);
     }
@@ -145,8 +137,6 @@ struct Node_t *balance(struct Node_t *node) {
 }
 
 struct Node_t *rotateLeft(struct Node_t *node) {
-    ON_ERROR(!node, "Nullptr", NULL);
-
     struct Node_t *newRoot = node   ->right;
     node   ->right         = newRoot->left;
     newRoot->left          = node;
@@ -158,8 +148,6 @@ struct Node_t *rotateLeft(struct Node_t *node) {
 }
 
 struct Node_t *rotateRight(struct Node_t *node) {
-    ON_ERROR(!node, "Nullptr", NULL);
-
     struct Node_t *newRoot = node   ->left;
     node   ->left          = newRoot->right;
     newRoot->right         = node;
@@ -172,13 +160,8 @@ struct Node_t *rotateRight(struct Node_t *node) {
 
 struct Node_t *_addKey(struct Node_t *node, Elem_t key) {
     // leaf case
-    if (!node) {
-        struct Node_t *newNode = nodeCtor(key);
+    if (!node) return nodeCtor(key);
 
-        return newNode;
-    }
-
-    // (node->height)++;
     if (key < node->key) {
         node->left  = _addKey(node->left,  key);
     }
@@ -193,26 +176,30 @@ struct Node_t *_addKey(struct Node_t *node, Elem_t key) {
 }
 
 void addKey (struct AVL_t *tree, Elem_t key) {
-    ON_ERROR(!tree, "Nullptr",);
+    if(!tree) return;
 
     tree->root = _addKey(tree->root, key);
 }
 
 Elem_t getNext(struct Node_t *node, Elem_t cmpEl) {
-    if (!node) return DEFAULT_MAX;
+    struct Node_t *cur = node;
+    struct Node_t *res = NULL;
 
-    Elem_t min1 = DEFAULT_MAX;
-    Elem_t min2 = DEFAULT_MAX;
+    while (cur)
+    {
+        if(cur->key == cmpEl) return cur->key;
 
-    if (node->left)  min1 = getNext(node->left,  cmpEl);
-    if (node->right) min2 = getNext(node->right, cmpEl);
-
-    if (node->key >= cmpEl) {
-        int mini = (min1 < min2 ? min1 : min2);
-        return (mini < node->key ? mini : node->key);
+        if(cur->key >= cmpEl) {
+            res = cur;
+            cur = cur->left;
+        } else {
+            cur = cur->right;
+        }
     }
 
-    return (min1 < min2 ? min1 : min2);
+    if (res) return res->key;
+    
+    return -1;
 }
 
 void graphNode(struct Node_t *node, FILE *tempFile) {
@@ -263,7 +250,7 @@ void graphDump(struct Node_t *node) {
     fprintf(tempFile, "}");
     fclose(tempFile);
 
-    system("dot -Tsvg temp.dot > graph.png");
+    system("dot -Tsvg temp.dot > graph.png && xdg-open graph.png");
 }
 
 void controller(struct AVL_t *tree) {
@@ -294,14 +281,8 @@ void controller(struct AVL_t *tree) {
                 int value = 0;
                 INPUT_CHECK(scanf("%d", &value), 1);
 
-                int res = getNext(tree->root, value);
+                result = getNext(tree->root, value);
                 followedQuest = 1;
-
-                if (res == DEFAULT_MAX) {
-                    printf("%d\n", -1);
-                    break;
-                }
-                else result = res;
 
                 printf("%d\n", result);
                 }
@@ -316,24 +297,8 @@ int main() {
     struct AVL_t *tree = treeCtor();
 
     controller(tree);
-
-    // addKey(tree, 1);
-    // addKey(tree, 3);
-    // addKey(tree, 3);
-
-    // int result = getNext(tree->root, 2);
-    // if (result == DEFAULT_MAX) result = -1;
-    // printf("%d\n", result);
-
-    // addKey(tree, 1);
-
-    // result = getNext(tree->root, 4);
-    // if (result == DEFAULT_MAX) result = -1;
-    // printf("%d\n", result);
-
-    // graphDump(tree->root); 
-
-    // treeDtor(tree);
+    
+    treeDtor(tree);
 
     return 0;
 }
