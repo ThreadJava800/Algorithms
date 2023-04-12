@@ -5,6 +5,11 @@
 
 typedef int Elem_t;
 
+#define true 1;
+#define false 0;
+
+const Elem_t DEFAULT_NONE = INT_MAX;
+
 struct Node_t
 {
     Elem_t key;
@@ -29,12 +34,27 @@ void   treapDtor(struct Treap_t *treap);
 
 struct Node_t *_merge(struct Node_t *left, struct Node_t *right);
 void   _split(Elem_t key, struct Node_t *current, struct Node_t **outLeft, struct Node_t **outRight);
+
 struct Node_t *_insert(struct Node_t *node, Elem_t key, int priority);
 void   insert (struct Treap_t *treap, Elem_t key);
 
+void _remove(struct Node_t **node,  Elem_t key);
+void  remove(struct Treap_t *treap, Elem_t key);
+
+int _exists(struct Node_t  *node,  Elem_t key);
+int  exists(struct Treap_t *treap, Elem_t key);
+
+Elem_t _next(struct Node_t  *node,  Elem_t cmpEl);
+Elem_t  next(struct Treap_t *treap, Elem_t cmpEl);
+
+Elem_t _prev(struct Node_t  *node,  Elem_t cmpEl);
+Elem_t  prev(struct Treap_t *treap, Elem_t cmpEl);
+
+// DEBUG
 void graphNode(struct Node_t *node, FILE *tempFile);
 void drawConnections(struct Node_t *node, FILE *tempFile);
 void graphDump(struct Node_t *node, int id);
+void printInOrder(struct Node_t* node);
 
 //=========CONTEST STAFF=============
 
@@ -92,6 +112,8 @@ void treapDtor(struct Treap_t *treap) {
     free(treap);
 }
 
+// MERGE & SPLIT
+
 struct Node_t *_merge(struct Node_t *left, struct Node_t *right) {
     if (!left)  return right;
     if (!right) return left;
@@ -125,7 +147,7 @@ void _split(Elem_t key, struct Node_t *current, struct Node_t **outLeft, struct 
     }
 }
 
-int count = 100;
+// INSERT SECTION
 
 struct Node_t *_insert(struct Node_t *node, Elem_t key, int priority) {
     if (!node) return nodeCtor(key, priority, NULL, NULL);
@@ -137,18 +159,12 @@ struct Node_t *_insert(struct Node_t *node, Elem_t key, int priority) {
             node->right = _insert(node->right, key, priority);
         }
 
-        // graphDump(node, count++);
         return node;
     }
 
     struct Node_t *outLeft  = NULL;
     struct Node_t *outRight = NULL;
     _split(key, node, &outLeft, &outRight);
-
-    // printf("%p %p\n", outLeft, outRight);
-
-    // graphDump(outLeft, count++);
-    // graphDump(outRight, count++);
 
     return nodeCtor(key, priority, outLeft, outRight);
 }
@@ -158,6 +174,96 @@ void insert(struct Treap_t *treap, Elem_t key) {
 
     treap->root = _insert(treap->root, key, rand() % 100);
 }
+
+// REMOVE SECTION
+
+void _remove(struct Node_t **node,  Elem_t key) {
+    if (!node)    return;      // not found
+    if (!(*node)) return;
+
+    if      ((*node)->key < key) _remove(&((*node)->right), key);
+    else if ((*node)->key > key) _remove(&((*node)->left),  key);
+    else     *node = _merge((*node)->left, (*node)->right);
+}
+
+void remove(struct Treap_t *treap, Elem_t key) {
+    ON_ERROR(!treap, "Nullptr",);
+
+    _remove(&(treap->root), key);
+}
+
+// EXISTS SECTION
+int _exists(struct Node_t *node,  Elem_t key) {
+    if (!node) return false;
+    if (node->key == key) return true;
+
+    int isPresent = _exists(node->left,  key);
+    if (isPresent) return true;
+
+    return _exists(node->right, key);
+}
+
+int exists(struct Treap_t *treap, Elem_t key) {
+    ON_ERROR(!treap, "Nullptr", -1);
+
+    return _exists(treap->root, key);
+}
+
+// NEXT SECTION
+
+Elem_t _next(struct Node_t  *node,  Elem_t cmpEl) {
+    struct Node_t *cur = node;
+    struct Node_t *res = NULL;
+
+    while (cur)
+    {
+        if(cur->key > cmpEl) {
+            res = cur;
+            cur = cur->left;
+        } else {
+            cur = cur->right;
+        }
+    }
+
+    if (res) return res->key;
+    
+    return DEFAULT_NONE;
+}
+
+Elem_t next(struct Treap_t *treap, Elem_t cmpEl) {
+    ON_ERROR(!treap, "Nullptr", DEFAULT_NONE);
+
+    return _next(treap->root, cmpEl);
+}
+
+// PREV SECTION
+
+Elem_t _prev(struct Node_t  *node,  Elem_t cmpEl) {
+    struct Node_t *cur = node;
+    struct Node_t *res = NULL;
+
+    while (cur)
+    {
+        if(cur->key >= cmpEl) {
+            cur = cur->left;
+        } else {
+            res = cur;
+            cur = cur->right;
+        }
+    }
+
+    if (res) return res->key;
+    
+    return DEFAULT_NONE;
+}
+
+Elem_t  prev(struct Treap_t *treap, Elem_t cmpEl) {
+    ON_ERROR(!treap, "Nullptr", DEFAULT_NONE);
+
+    return _prev(treap->root, cmpEl);
+}
+
+// GRAPH DUMPS
 
 void graphNode(struct Node_t *node, FILE *tempFile) {
     fprintf(
@@ -213,11 +319,11 @@ void graphDump(struct Node_t *node, int id) {
     system(command);
 }
 
-void inorder(struct Node_t* root) { 
-    if (root != NULL) { 
-        inorder(root->left); 
-        printf("key: %d priority: %d\n", root->key, root->prior); 
-        inorder(root->right); 
+void printInOrder(struct Node_t* node) { 
+    if (node) { 
+        printInOrder(node->left); 
+        printf("key: %d priority: %d\n", node->key, node->prior); 
+        printInOrder(node->right); 
     } 
 } 
 
@@ -226,23 +332,23 @@ int main() {
 
     struct Treap_t *treap = treapCtor();
 
-    // treap->root = nodeCtor(2, rand() % 100, NULL, NULL);
-
     insert(treap, 1);
-    // inorder(treap->root);
-    // graphDump(treap->root, 0);
     insert(treap, 90);
-    // graphDump(treap->root, 1);
     insert(treap, 17);
-    // graphDump(treap->root, 2);
     insert(treap, 18);
     insert(treap, -10);
     insert(treap, 19);
     insert(treap, 45);
     insert(treap, 8);
-    graphDump(treap->root, 3);
 
-    inorder(treap->root);
+    // graphDump(treap->root, 0);
+
+    printf("%d\n", prev(treap, -9));
+    // remove(treap, 90);
+    // printf("%d\n", exists(treap, 90));
+    // graphDump(treap->root, 1);
+
+    // printInOrder(treap->root);
 
     treapDtor(treap);
 
