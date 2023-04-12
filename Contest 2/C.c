@@ -32,6 +32,9 @@ struct Node_t  *nodeCtor (Elem_t key, int prior, struct Node_t *left, struct Nod
 void   nodeDtor (struct Node_t  *node);
 void   treapDtor(struct Treap_t *treap);
 
+size_t getNodeSize(struct Node_t *node);
+void   updNodeSize(struct Node_t *node);
+
 struct Node_t *_merge(struct Node_t *left, struct Node_t *right);
 void   _split(Elem_t key, struct Node_t *current, struct Node_t **outLeft, struct Node_t **outRight);
 
@@ -88,10 +91,11 @@ struct Node_t  *nodeCtor (Elem_t key, int prior, struct Node_t *left, struct Nod
 
     node->key           = key;
     node->prior         = prior;
-    node->childrenCount = 0;
 
     node->left  = left;
     node->right = right;
+
+    updNodeSize(node);
 
     return node;
 }
@@ -114,17 +118,29 @@ void treapDtor(struct Treap_t *treap) {
 
 // MERGE & SPLIT
 
+size_t getNodeSize(struct Node_t *node) {
+    return (!node) ? 0 : node->childrenCount;
+}
+
+void updNodeSize(struct Node_t *node) {
+    ON_ERROR(!node, "Nullptr", );
+
+    node->childrenCount = getNodeSize(node->left) + getNodeSize(node->right) + 1;
+}
+
 struct Node_t *_merge(struct Node_t *left, struct Node_t *right) {
     if (!left)  return right;
     if (!right) return left;
 
     if (left->prior > right->prior) {
         left->right = _merge(left->right, right);
+        updNodeSize(left);
         return left;
     }
 
     // else
     right->left = _merge(left, right->left);
+    updNodeSize(right);
     return right;
 }
 
@@ -138,12 +154,16 @@ void _split(Elem_t key, struct Node_t *current, struct Node_t **outLeft, struct 
 
         current->right = newNode;
         *outLeft = current;
+
+        updNodeSize(current);
     } else {
         if (!(current->left)) *outLeft = NULL;
         else _split(key, current->left, outLeft, &newNode);
 
         current->left = newNode;
         *outRight = current;
+
+        updNodeSize(current);
     }
 }
 
@@ -158,6 +178,8 @@ struct Node_t *_insert(struct Node_t *node, Elem_t key, int priority) {
         } else {
             node->right = _insert(node->right, key, priority);
         }
+
+        updNodeSize(node);
 
         return node;
     }
@@ -184,6 +206,8 @@ void _remove(struct Node_t **node,  Elem_t key) {
     if      ((*node)->key < key) _remove(&((*node)->right), key);
     else if ((*node)->key > key) _remove(&((*node)->left),  key);
     else     *node = _merge((*node)->left, (*node)->right);
+
+    updNodeSize(*node);
 }
 
 void remove(struct Treap_t *treap, Elem_t key) {
@@ -276,9 +300,10 @@ void graphNode(struct Node_t *node, FILE *tempFile) {
 
     fprintf(
                 tempFile, 
-                " | {left: %p | right: %p | cur: %p} }}\"];\n", 
+                " | {left: %p | right: %p | children: %d | cur: %p} }}\"];\n", 
                 node->left,
                 node->right,
+                node->childrenCount,
                 node
             );
 
@@ -341,12 +366,12 @@ int main() {
     insert(treap, 45);
     insert(treap, 8);
 
-    // graphDump(treap->root, 0);
+    graphDump(treap->root, 0);
 
-    printf("%d\n", prev(treap, -9));
-    // remove(treap, 90);
+    // printf("%d\n", prev(treap, -9));
+    remove(treap, 90);
     // printf("%d\n", exists(treap, 90));
-    // graphDump(treap->root, 1);
+    graphDump(treap->root, 1);
 
     // printInOrder(treap->root);
 
