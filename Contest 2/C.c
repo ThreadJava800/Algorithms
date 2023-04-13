@@ -2,8 +2,18 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <time.h>
+#include <string.h>
 
 typedef int Elem_t;
+
+const int MAX_COM_LENGTH = 10;
+
+const char INSERT_COM[] = "insert";
+const char DELETE_COM[] = "delete";
+const char EXISTS_COM[] = "exists";
+const char NEXT_COM[]   = "next";
+const char PREV_COM[]   = "prev";
+const char KTH_COM[]    = "kth";
 
 #define true 1;
 #define false 0;
@@ -42,7 +52,7 @@ struct Node_t *_insert(struct Node_t *node, Elem_t key, int priority);
 void   insert (struct Treap_t *treap, Elem_t key);
 
 void _remove(struct Node_t **node,  Elem_t key);
-void  remove(struct Treap_t *treap, Elem_t key);
+void  removeTreap(struct Treap_t *treap, Elem_t key);
 
 int _exists(struct Node_t  *node,  Elem_t key);
 int  exists(struct Treap_t *treap, Elem_t key);
@@ -53,6 +63,9 @@ Elem_t  next(struct Treap_t *treap, Elem_t cmpEl);
 Elem_t _prev(struct Node_t  *node,  Elem_t cmpEl);
 Elem_t  prev(struct Treap_t *treap, Elem_t cmpEl);
 
+Elem_t _kth(struct Node_t  *node,  size_t k);
+Elem_t  kth(struct Treap_t *treap, size_t k);
+
 // DEBUG
 void graphNode(struct Node_t *node, FILE *tempFile);
 void drawConnections(struct Node_t *node, FILE *tempFile);
@@ -60,7 +73,7 @@ void graphDump(struct Node_t *node, int id);
 void printInOrder(struct Node_t* node);
 
 //=========CONTEST STAFF=============
-
+void parser();
 
 #define INPUT_CHECK(readFunc, res) {        \
     int factRes = readFunc;                  \
@@ -119,11 +132,11 @@ void treapDtor(struct Treap_t *treap) {
 // MERGE & SPLIT
 
 size_t getNodeSize(struct Node_t *node) {
-    return (!node) ? 0 : node->childrenCount;
+    return (node == NULL) ? 0 : node->childrenCount;
 }
 
 void updNodeSize(struct Node_t *node) {
-    ON_ERROR(!node, "Nullptr", );
+    if (!node) return;
 
     node->childrenCount = getNodeSize(node->left) + getNodeSize(node->right) + 1;
 }
@@ -186,6 +199,7 @@ struct Node_t *_insert(struct Node_t *node, Elem_t key, int priority) {
 
     struct Node_t *outLeft  = NULL;
     struct Node_t *outRight = NULL;
+
     _split(key, node, &outLeft, &outRight);
 
     return nodeCtor(key, priority, outLeft, outRight);
@@ -194,7 +208,9 @@ struct Node_t *_insert(struct Node_t *node, Elem_t key, int priority) {
 void insert(struct Treap_t *treap, Elem_t key) {
     ON_ERROR(!treap, "Nullptr", );
 
-    treap->root = _insert(treap->root, key, rand() % 100);
+    if (exists(treap, key)) return;
+
+    treap->root = _insert(treap->root, key, rand());
 }
 
 // REMOVE SECTION
@@ -203,14 +219,20 @@ void _remove(struct Node_t **node,  Elem_t key) {
     if (!node)    return;      // not found
     if (!(*node)) return;
 
-    if      ((*node)->key < key) _remove(&((*node)->right), key);
-    else if ((*node)->key > key) _remove(&((*node)->left),  key);
+    if ((*node)->key < key) {
+        _remove(&((*node)->right), key);
+        updNodeSize(*node);
+    }
+    else if ((*node)->key > key) {
+        _remove(&((*node)->left),  key);
+        updNodeSize(*node);
+    }
     else     *node = _merge((*node)->left, (*node)->right);
-
+    // upd everywhere
     updNodeSize(*node);
 }
 
-void remove(struct Treap_t *treap, Elem_t key) {
+void removeTreap(struct Treap_t *treap, Elem_t key) {
     ON_ERROR(!treap, "Nullptr",);
 
     _remove(&(treap->root), key);
@@ -218,13 +240,18 @@ void remove(struct Treap_t *treap, Elem_t key) {
 
 // EXISTS SECTION
 int _exists(struct Node_t *node,  Elem_t key) {
-    if (!node) return false;
-    if (node->key == key) return true;
+    struct Node_t *cur = node;
 
-    int isPresent = _exists(node->left,  key);
-    if (isPresent) return true;
+    while (cur)
+    {
+        if (cur->key == key) return true;
 
-    return _exists(node->right, key);
+        if (key < cur->key) cur = cur->left;
+        else                cur = cur->right;
+    }
+    
+
+    return false;
 }
 
 int exists(struct Treap_t *treap, Elem_t key) {
@@ -287,6 +314,28 @@ Elem_t  prev(struct Treap_t *treap, Elem_t cmpEl) {
     return _prev(treap->root, cmpEl);
 }
 
+Elem_t _kth(struct Node_t *node,  size_t k) {
+    struct Node_t *cur = node;
+    
+    while (cur)
+    {
+        size_t leftSize = getNodeSize(cur->left);
+        if (leftSize == k) return cur->key;
+
+        cur = leftSize > k ? cur->left : cur->right;
+        if (leftSize < k) k -= (leftSize + 1);
+    }
+    
+
+    return DEFAULT_NONE;
+}
+
+Elem_t  kth(struct Treap_t *treap, size_t k) {
+    ON_ERROR(!treap, "Nullptr", DEFAULT_NONE);
+
+    return _kth(treap->root, k);
+}
+
 // GRAPH DUMPS
 
 void graphNode(struct Node_t *node, FILE *tempFile) {
@@ -300,7 +349,7 @@ void graphNode(struct Node_t *node, FILE *tempFile) {
 
     fprintf(
                 tempFile, 
-                " | {left: %p | right: %p | children: %d | cur: %p} }}\"];\n", 
+                " | {left: %p | right: %p | children: %lu | cur: %p} }}\"];\n", 
                 node->left,
                 node->right,
                 node->childrenCount,
@@ -352,30 +401,51 @@ void printInOrder(struct Node_t* node) {
     } 
 } 
 
-int main() {
-    srand((unsigned int) time(NULL));
+void parser() {
+    char text[MAX_COM_LENGTH];
+    int  number = 0;
 
     struct Treap_t *treap = treapCtor();
 
-    insert(treap, 1);
-    insert(treap, 90);
-    insert(treap, 17);
-    insert(treap, 18);
-    insert(treap, -10);
-    insert(treap, 19);
-    insert(treap, 45);
-    insert(treap, 8);
+    while (scanf("%s %d", text, &number) == 2)
+    {
+        if (!strcmp(text, INSERT_COM)) {
+            insert(treap, number);
+        }
+        if (!strcmp(text, EXISTS_COM)) {
+            int res = exists(treap, number);
+            if (res) printf("true\n");
+            else     printf("false\n");
+        }
+        if (!strcmp(text, NEXT_COM)) {
+            int res = next(treap, number);
 
-    graphDump(treap->root, 0);
+            if (res == DEFAULT_NONE) printf("none\n");
+            else                     printf("%d\n", res);
+        }
+        if (!strcmp(text, PREV_COM)) {
+            int res = prev(treap, number);
 
-    // printf("%d\n", prev(treap, -9));
-    remove(treap, 90);
-    // printf("%d\n", exists(treap, 90));
-    graphDump(treap->root, 1);
+            if (res == DEFAULT_NONE) printf("none\n");
+            else                     printf("%d\n", res);
+        }
+        if (!strcmp(text, KTH_COM)) {
+            int res = kth(treap, (size_t) number);
 
-    // printInOrder(treap->root);
+            if (res == DEFAULT_NONE) printf("none\n");
+            else                     printf("%d\n", res);
+        }
+        if (!strcmp(text, DELETE_COM)) {
+           removeTreap(treap, number);
+        }
+    }
+    
+}
 
-    treapDtor(treap);
+int main() {
+    srand((unsigned int) time(NULL));
+
+    parser();
 
     return 0;
 }
