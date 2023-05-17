@@ -9,9 +9,9 @@ const size_t MAX_STR_SIZE = 5e4 + 1;
 const int    HASH_MOD     = 33554432 - 1; // 2^25 - 1
 const int    POLYNOMIAL_P = 7;
 
-size_t polynomialHash(const char *string, size_t patternLen);
-short cmpSubs(const char *origString, size_t origStart, const char *pattern, size_t patLen);
-void printSubstrOccur(const char *origString, size_t origSize, const char *substr, size_t substrSize);
+size_t polynomialHash(const char *string, const size_t patternLen);
+short cmpSubs(const char *origString, const size_t origStart, const char *pattern, const size_t patLen);
+void printSubstrOccur(const char *origString, const size_t origSize, const char *substr, const size_t substrSize);
 
 #define INPUT_CHECK(readFunc, res) {        \
     int factRes = readFunc;                  \
@@ -26,7 +26,7 @@ void printSubstrOccur(const char *origString, size_t origSize, const char *subst
     }                                                        \
 }                                                             \
 
-size_t polynomialHash(const char *string, size_t patternLen) {
+size_t polynomialHash(const char *string, const size_t patternLen) {
     ON_ERROR(!string, "Nullptr", HASH_MOD);
 
     size_t hash = 0;
@@ -40,7 +40,7 @@ size_t polynomialHash(const char *string, size_t patternLen) {
     return hash;
 }
 
-short cmpSubs(const char *origString, size_t origStart, const char *pattern, size_t patLen) {
+short cmpSubs(const char *origString, const size_t origStart, const char *pattern, const size_t patLen) {
     ON_ERROR(!origString || !pattern, "Nullptr", false);
 
     for (size_t i = 0; i < patLen; i++) {
@@ -50,7 +50,7 @@ short cmpSubs(const char *origString, size_t origStart, const char *pattern, siz
     return true;
 }
 
-void printSubstrOccur(const char *origString, size_t origSize, const char *substr, size_t substrSize) {
+void printSubstrOccur(const char *origString, const size_t origSize, const char *substr, const size_t substrSize) {
     ON_ERROR(!origString || !substr, "Nullptr",);
 
     if (substrSize > origSize) return;
