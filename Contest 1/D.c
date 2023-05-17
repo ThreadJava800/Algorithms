@@ -1,9 +1,7 @@
-#include "stdio.h"
 #include "malloc.h"
-#include "string.h"
+#include "stdio.h"
 #include "stdlib.h"
-
-// Getting ready for review
+#include "string.h"
 
 #define INPUT_CHECK(readFunc, res) {        \
     int factRes = readFunc;                  \
@@ -19,22 +17,44 @@
 }                                                             \
 
 
-int MAX_COMMAND_LINE = 64;
-int MAX_NUMBER_CNT = 2 * 100000 + 1;
+size_t MAX_COMMAND_LINE = 64;
+size_t MAX_NUMBER_CNT = 2 * 100000 + 1;
 
-char ENQ_COM[]  = "enqueue";
-char DEQ_COM[]   = "dequeue";
-char FRT_COM[]  = "front";
-char SIZE_COM[]  = "size";
-char CLEAR_COM[] = "clear";
-char MIN_COM[]  = "min";
+enum errors {
+    NULLPTR             = -1,
+    UNABLE_TO_ALLOC_MEM = -2,
+    INCORRECT_INPUT     = -3,
+    INCORRECT_COMMAND   = -4,
 
-char ERROR_MSG[] = "error";
-char OK_MSG[]    = "ok";
+    NO_ERROR            = 0,
+};
 
+enum commandNums {
+    ENQ_COM,
+    DEQ_COM,
+    FRT_COM,
+    SIZE_COM,
+    CLEAR_COM,
+    MIN_COM,
+
+    ERROR_MSG,
+    OK_MSG
+};
+
+const char* const COMMANDS[] = {
+    [ENQ_COM]   = "enqueue",
+    [DEQ_COM]   = "dequeue",
+    [FRT_COM]   = "front",
+    [SIZE_COM]  = "size",
+    [CLEAR_COM] = "clear",
+    [MIN_COM]   = "min",
+
+    [ERROR_MSG] = "error",
+    [OK_MSG]    = "ok"
+};
 
 typedef struct {
-    int size;
+    size_t size;
 
     int* values;
 } Stack_t;
@@ -47,24 +67,24 @@ typedef struct {
     int* min2;
 } Queue_t;
 
-void runMainCycle();
-void parseCommands(int* isRunning, char* command, Queue_t* queue);
+errors findSolution();
+bool parseCommands(const char* command, Queue_t* queue);
 
 Stack_t* stkInit();
-void stkPush(Stack_t* stack, int value);
+void stkPush(Stack_t* stack, const int value);
 void stkResize(Stack_t* stack);
 int stkPop(Stack_t* stack, int* success);
 int stkBack(Stack_t* stack, int* success);
-int stkSize(Stack_t* stack);
+size_t stkSize(Stack_t* stack);
 void stkClear(Stack_t* stack);
 void stkDtor(Stack_t* stack);
 
 Queue_t* queueCtr();
-void _queueEnqSupport(Stack_t* values, int* mins, int value);
-void queueEnq(Queue_t* queue, int value);
+void _queueEnqSupport(Stack_t* values, int* mins, const int value);
+void queueEnq(Queue_t* queue, const int value);
 int queueDeq(Queue_t* queue, int* success);
 int queueFront(Queue_t* queue, int* success);
-int queueSize(Queue_t* queue);
+size_t queueSize(Queue_t* queue);
 void queueClear(Queue_t* queue);
 int queueMin(Queue_t* queue, int* success);
 void queueDtor(Queue_t* queue);
@@ -75,7 +95,10 @@ Stack_t* stkInit() {
     if (!stack) return NULL;
 
     stack->values   = (int*)     calloc(MAX_NUMBER_CNT, sizeof(int));
-    if (!stack->values) return NULL;
+    if (!stack->values) {
+        free(stack);
+        return NULL;
+    }
 
     return stack;
 }
@@ -84,7 +107,7 @@ void stkPush(Stack_t* stack, int value) {
     if (!stack) return;
 
     stack->values[stack->size] = value;
-    stack->size++;
+    ++stack->size;
 }
 
 int stkPop(Stack_t* stack, int* success) {
@@ -95,7 +118,7 @@ int stkPop(Stack_t* stack, int* success) {
         return -1;
     }
 
-    stack->size--;
+    --stack->size;
     int value = stack->values[stack->size];
 
     return value;
@@ -114,8 +137,8 @@ int stkBack(Stack_t* stack, int* success) {
     return value;
 }
 
-int stkSize(Stack_t* stack) {
-    if (!stack) return -1;
+size_t stkSize(Stack_t* stack) {
+    if (!stack) return 0xDEAD;
 
     return stack->size;
 }
@@ -154,7 +177,7 @@ void _queueEnqSupport(Stack_t* values, int* mins, int value) {
 
     stkPush(values, value);
 
-    int stackSize = values->size;
+    size_t stackSize = values->size;
 
     if (stackSize == 1) {
         mins[0] = value;
@@ -203,8 +226,8 @@ int queueFront(Queue_t* queue, int* success) {
     return stkBack(queue->stack2, success);
 }
 
-int queueSize(Queue_t* queue) {
-    ON_ERROR(!queue, "Null ptr, cringe", -1);
+size_t queueSize(Queue_t* queue) {
+    ON_ERROR(!queue, "Null ptr, cringe", 0);
 
     return stkSize(queue->stack1) + stkSize(queue->stack2);
 }
@@ -221,8 +244,8 @@ int queueMin(Queue_t* queue, int* success) {
 
     *success = 1;
 
-    int size1 = queue->stack1->size;
-    int size2 = queue->stack2->size;
+    size_t size1 = queue->stack1->size;
+    size_t size2 = queue->stack2->size;
 
     if (size1 == 0) {
         if (size2 == 0) {
@@ -251,84 +274,87 @@ void queueDtor(Queue_t* queue) {
 }
 
 
-void runMainCycle() {
-    int isRunning = 1;
-
+errors findSolution() {
     Queue_t* queue = queueCtr();
-    if (!queue) return;
+    if (!queue) return NULLPTR;
 
     int n = 0;
     INPUT_CHECK(scanf("%d", &n), 1);
 
     for(int i = 0; i < n; i++) {
-        char* command = (char*) calloc(MAX_COMMAND_LINE, sizeof(char));
-        if (!command) return;
+        char* command = (char*) calloc(MAX_COMMAND_LINE + 1, sizeof(char));
+        if (!command) return UNABLE_TO_ALLOC_MEM;
 
-        int res = scanf("%s", command);
-        if (!res) return;
+        int res = scanf("%64s", command);
+        if (!res) return INCORRECT_INPUT;
 
-        parseCommands(&isRunning, command, queue);
+        int success = parseCommands(command, queue);
         free(command);
+
+        if (!success) return INCORRECT_COMMAND;
     }
 
     queueDtor(queue);
+
+    return NO_ERROR;
 }
 
-void parseCommands(int* isRunning, char* command, Queue_t* queue) {
-    if(!isRunning || !command || !queue) return;
+bool parseCommands(const char* command, Queue_t* queue) {
+    if(!command || !queue) return false;
 
-    if (!strcmp(command, ENQ_COM)) {
+    int success = true;
+
+    if (!strcmp(command, COMMANDS[ENQ_COM])) {
         int value = 0;
         int res = scanf("%d", &value);
-        if (!res) return;
+        if (!res) return false;
 
         queueEnq(queue, value);
-        fprintf(stdout, "%s\n", OK_MSG);
+        fprintf(stdout, "%s\n", COMMANDS[OK_MSG]);
 
-        return;
+        return true;
     }
-    if (!strcmp(command, DEQ_COM)) {
-        int success = 1;
+    if (!strcmp(command, COMMANDS[DEQ_COM])) {
         int value = queueDeq(queue, &success);
 
         if (success) fprintf(stdout, "%d\n", value);
-        else fprintf(stdout, "%s\n", ERROR_MSG);
+        else fprintf(stdout, "%s\n", COMMANDS[ERROR_MSG]);
 
-        return;
+        return true;
     }
-    if (!strcmp(command, FRT_COM)) {
-        int success = 1;
+    if (!strcmp(command, COMMANDS[FRT_COM])) {
         int value = queueFront(queue, &success);
 
         if (success) fprintf(stdout, "%d\n", value);
-        else fprintf(stdout, "%s\n", ERROR_MSG);
+        else fprintf(stdout, "%s\n", COMMANDS[ERROR_MSG]);
 
-        return;
+        return true;
     }
-    if (!strcmp(command, SIZE_COM)) {
-        fprintf(stdout, "%d\n", queueSize(queue));
+    if (!strcmp(command, COMMANDS[SIZE_COM])) {
+        fprintf(stdout, "%lu\n", queueSize(queue));
 
-        return;
+        return true;
     }
-    if (!strcmp(command, CLEAR_COM)) {
+    if (!strcmp(command, COMMANDS[CLEAR_COM])) {
         queueClear(queue);
-        fprintf(stdout, "%s\n", OK_MSG);
+        fprintf(stdout, "%s\n", COMMANDS[OK_MSG]);
 
-        return;
+        return true;
     }
-    if (!strcmp(command, MIN_COM)) {
-        int success = 1;
+    if (!strcmp(command, COMMANDS[MIN_COM])) {
         int value = queueMin(queue, &success);
 
         if (success) fprintf(stdout, "%d\n", value);
-        else fprintf(stdout, "%s\n", ERROR_MSG);
+        else fprintf(stdout, "%s\n", COMMANDS[ERROR_MSG]);
 
-        return;
+        return true;
     }
+
+    return false;
 }
 
 int main() {
-    runMainCycle();
+    findSolution();
 
     return 0;
 }
