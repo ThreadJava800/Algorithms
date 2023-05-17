@@ -1,11 +1,11 @@
+#include <malloc.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
-#include <math.h>
 #include <string.h>
 
-typedef short (*CompareFunc_t)(int val1, int val2);
+typedef short (*CompareFunc_t)(const int val1, const int val2);
 typedef int (*HashFunc_t)(int value);
 
 const int DEFAULT_ARR_SIZE = 990001;
@@ -41,11 +41,11 @@ struct List_t {
 
 void                  listCtor    (struct List_t *list);
 struct ListElement_t *newNode     (int value, struct ListElement_t *prev);
-void                  listPushBack(struct List_t *list, int value);
-short                 listFind    (struct List_t *list, int element, CompareFunc_t comparator);
-void                  listDelete  (struct List_t *list, int value);
+void                  listPushBack(struct List_t *list, const int value);
+short                 listFind    (struct List_t *list, const int element, CompareFunc_t comparator);
+void                  listDelete  (struct List_t *list, const int value);
 void                  listDtor    (struct List_t *list);
-void listDump(struct List_t *list);
+void                  listDump    (struct List_t *list);
 //=======================HASH MAP=======================
 struct HashMap_t {
     struct List_t *listArr;
@@ -60,9 +60,9 @@ void               hashMapDelete(struct HashMap_t *hashMap);
 void               hashMapDtor  (struct HashMap_t *hashMap);
 
 short              comparator(int val1, int val2);
-void               hashMapInsert(struct HashMap_t *hashMap, int key);
-void               hashMapRemove(struct HashMap_t *hashMap, int key);
-short              hashMapSearch(struct HashMap_t *hashMap, int key);
+void               hashMapInsert(struct HashMap_t *hashMap, const int key);
+void               hashMapRemove(struct HashMap_t *hashMap, const int key);
+short              hashMapSearch(struct HashMap_t *hashMap, const int key);
 
 int rotlHash (int value);
 //======================================
@@ -84,7 +84,7 @@ struct ListElement_t *newNode(int value, struct ListElement_t *prev) {
     return node;
 }
 
-void listPushBack(struct List_t *list, int value) {
+void listPushBack(struct List_t *list, const int value) {
     ON_ERROR(!list, "Nullptr", );
 
     if (!list->root) {
@@ -98,7 +98,7 @@ void listPushBack(struct List_t *list, int value) {
     curNode->next = newNode(value, curNode);
 }
 
-short listFind(struct List_t *list, int element, CompareFunc_t comparator) {
+short listFind(struct List_t *list, const int element, CompareFunc_t comparator) {
     ON_ERROR(!list, "Nullptr", 0);
 
     struct ListElement_t *curNode = list->root;
@@ -110,7 +110,7 @@ short listFind(struct List_t *list, int element, CompareFunc_t comparator) {
     
     return 0;
 }
-void listDelete(struct List_t *list, int value) {
+void listDelete(struct List_t *list, const int value) {
     ON_ERROR(!list, "Nullptr", );
 
     struct ListElement_t *curNode = list->root;
@@ -217,7 +217,7 @@ void hashMapDtor(struct HashMap_t *hashMap) {
     free(hashMap->listArr);
 }
 
-void hashMapInsert(struct HashMap_t *hashMap, int key) {
+void hashMapInsert(struct HashMap_t *hashMap, const int key) {
     ON_ERROR(!hashMap, "Nullptr",);
 
     int hashSum = hashMap->hashFunc(key) % hashMap->listCnt;
@@ -227,7 +227,7 @@ void hashMapInsert(struct HashMap_t *hashMap, int key) {
     // listDump(&(hashMap->listArr[hashSum]));
 }
 
-void hashMapRemove(struct HashMap_t *hashMap, int key) {
+void hashMapRemove(struct HashMap_t *hashMap, const int key) {
     ON_ERROR(!hashMap, "Nullptr", );
 
     int hashSum = hashMap->hashFunc(key) % hashMap->listCnt;
@@ -237,11 +237,11 @@ void hashMapRemove(struct HashMap_t *hashMap, int key) {
     // listDump(&(hashMap->listArr[hashSum]));
 }
 
-short comparator(int val1, int val2) {
+short comparator(const int val1, const int val2) {
     return val1 == val2;
 }
 
-short hashMapSearch(struct HashMap_t *hashMap, int key) {
+short hashMapSearch(struct HashMap_t *hashMap, const int key) {
     ON_ERROR(!hashMap || !(hashMap->listArr), "Nullptr", -1);
 
     int  hashSum    = hashMap->hashFunc(key) % hashMap->listCnt;
@@ -288,6 +288,8 @@ int main() {
             break;
         }
     }
+
+    hashMapDelete(hashMap);
 
     return 0;
 }
