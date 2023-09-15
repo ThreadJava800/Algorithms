@@ -1,0 +1,6 @@
+digraph structs {
+	rankdir=LR;
+	label0[shape=record, style="rounded, filled", fillcolor="red", label="{{phys: 0 | log: 0} | val: 0 | {n: 0 | p: 0} }"];
+	label0->label0 [color="red"]
+	label1->label2 [color="#038c61"]
+}
