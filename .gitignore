@@ -5,3 +5,4 @@ lang
 *.txt
 *.png
 .vscode/
+test.cpp
