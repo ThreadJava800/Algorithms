@@ -1,57 +1,81 @@
 #include <iostream>
 #include <vector>
 
-static const size_t PLUS_INF = 1e9;
+static const int PLUS_INF = 1e5;
 
 int main() {
-    size_t n = 0, m = 0;
+    int n = 0, m = 0;
     std::cin >> n >> m;
 
-    std::vector<size_t> coords(n);
+    std::vector<int> coords(n, 0);
+    std::vector<int> d(n, 0), t(n, 0);
+    int** dp = new int*[n];
+    for (int i = 0; i < n; i++) {
+        dp[i] = new int[n];
+        for (int j = 0; j < n ;j++) {
+            dp[i][j] = 0;
+        }
+    }
 
-    for (size_t i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
         std::cin >> coords[i];
 
-    std::vector<size_t> now;
-    std::vector<size_t> last;
-    size_t**            old = new size_t*[n];
-    size_t**            dp  = new size_t*[n];
-
-    // расстояния до деревень слева для всех i
-    for (size_t i = 1; i < n; i++) {
-        for (size_t j = 0; j < i - 1; j++) {
-            now[i] += abs(coords[i] - coords[j]);
+    for (int i = 0; i < n; i++) {
+        int sum = 0;
+        for (int j = 0; j <= i - 1; j++) {
+            sum += coords[i] - coords[j];
         }
+        d[i] = sum;
     }
 
-    for (size_t i = 0; i < n; i++) {
-        dp[i]  = new size_t[n];
-        old[i] = new size_t[n];
-    }
+    for (int k = 1; k < m; k++) {
+        for (int i = 0; i < n; i++) {
+            t[i] = PLUS_INF;
 
-    // минимальные расстояния от деревень до ближайшего почтового отделения на отрезке
-    for (size_t i = 1; i < n; i++) {
-        for (size_t j = 0; j < n - 1; j++) {
-            size_t summa = 0;
-            for (size_t t = j + 1; t < i - 1; t++) {
-                summa += std::min(abs(coords[i] - coords[t]), abs(coords[i] - coords[t]));
-                dp[i][j] = summa;
-            }
-        }
-    }
+            int r = i;
+            int summa = 0;
 
-    for (size_t k = 1; k < m; k++) {
-        last = now;
-        for (size_t i = 0; i < n; i++) now[i] = PLUS_INF;
-        for (size_t i = 0; i < n; i++) {
-            for (size_t j = 0; j < i - 1; j++) {
-                if (now[i] > dp[i][j] + last[j]) {
-                    old[i][k] = j;
-                    now[i] = dp[i][j] + last[j];
+            for (int j = i - 1; j >= 0; j--) {
+                while((r > j) && (coords[i] - coords[r - 1] < coords[r - 1] - coords[j])) {
+                    r--;
+                    summa = summa - (coords[r] - coords[j + 1]) + (coords[i] - coords[r]);
+                }
+
+                summa += (r - j - 1) * (coords[j + 1] - coords[j]);
+                if (summa + d[j] < t[i]) {
+                    t[i] = summa + d[j];
+                    dp[i][k] = j;
                 }
             }
         }
+        d = t;
     }
+
+    int min = PLUS_INF;
+    int mm = 0;
+    for (int i = 0; i < n; i++) {
+        int summa = d[i];
+        for (int j = i + 1; j < n; j++) summa += (coords[j] - coords[i]);
+        if (summa < min) {
+            min = summa;
+            mm = i;
+        }
+    }
+
+    std::cerr << min << '\n';
+
+    int k = m - 1;
+    while (k >= 0)
+    {
+        d[k] = mm;
+        mm = dp[mm][k];
+        k--;
+    }
+    
+    for (int i = 0; i < m; i++) {
+        if (d[i] != 1e5) std::cerr << coords[d[i]] << ' ';
+    }
+    
 
     return 0;
 }
