@@ -2,32 +2,34 @@
 #include <vector>
 #include <climits>
 
-static const long long INF = INT_MAX;
-
-long long getMinMax(long long n, long long m) {
-    if (m == 1 || m == 0) return m;
-    if (n == 1)           return m;
-
-    long long mini = INF;
-    for (long long i = 1; i <= m; i++) {
-        long long temp = std::max(getMinMax(n - 1, i - 1), getMinMax(n, m - i));
-        mini = std::min(temp, mini);
-    }
-
-    return mini + 1;
-}
+static const long long INF = LLONG_MAX;
 
 int main() {
     long long n = 0, m = 0;
     std::cin >> m >> n;
 
-    if (m == 0) {
-        std::cout << -1;
+    if (n == 0 && m == 1) {
+        std::cout << 0 << '\n';
+        return 0;
+    }
+    if (n == 0) {
+        std::cout << -1 << '\n';
         return 0;
     }
 
-    // std::vector<std::vector<long long>> attempts(n + 1, std::vector<long long>(m + 1, -1));
-    std::cout << getMinMax(n, m) - 1;
+    std::vector<long long> attempts(n + 1, 0);
+    
+    long long attemptCnt = 0;
+    while (attempts[n] < m - 1)
+    {
+        for (int i = n; i > 0; i--) {
+            attempts[i] = attempts[i] + attempts[i - 1] + 1;
+        }
+
+        attemptCnt++;
+    }
+    
+    std::cout << attemptCnt << '\n';
 
     return 0;
 }
