@@ -4,46 +4,24 @@
 
     static const size_t INF = 14 * 1e6;
 
-    size_t shortestPath(std::vector<std::vector<size_t>>& dist, std::vector<size_t>* prev);
+    size_t shortestPath(size_t ind, size_t mask, std::vector<std::vector<size_t>>& dist);
     inline bool contains(size_t mask, size_t v);
 
     inline bool contains(size_t mask, size_t v) {
         return mask & (1 << v);
     }
 
-    size_t shortestPath(std::vector<std::vector<size_t>>& dist, std::vector<size_t>* prev) {
-        size_t all = (1 << dist.size()) - 1;
-        std::vector<std::vector<size_t>> dp(dist.size(), std::vector<size_t>(1 << dist.size(), INF));  
+    std::vector<std::vector<size_t>> dp;
 
-        size_t listSize = dp.size();
-        for (size_t i = 0; i < listSize; i++)
-            dp[i][1 << i] = 0;
+    size_t shortestPath(size_t ind, size_t mask, std::vector<std::vector<size_t>>& dist) {
+        if (dp[ind][mask] != INF) return dp[ind][mask];
 
-        for (size_t mask = 1; mask <= all; mask++) {
-            for (size_t vert1 = 0; vert1 < listSize; vert1++) {
-
-                if (contains(mask, vert1)) {
-                    for (size_t vert2 = 0;  vert2 < listSize; vert2++) {
-
-                        if (!contains(mask, vert2)) {
-
-                            if (dp[vert2][mask | (1 << vert2)] > dp[vert1][mask] + dist[vert1][vert2]) {
-                                dp[vert2][mask | (1 << vert2)] = dp[vert1][mask] + dist[vert1][vert2];
-                                
-                                (*prev)[mask | (1 << vert2)] = vert1;
-                            }
-                        }
-                    }
-                }
+        for (size_t i = 0; i < dist.size(); i++) {
+            if (contains(mask, i)) {
+                dp[ind][mask] = std::min(dp[ind][mask], shortestPath(i, mask - (1 << i), dist) + dist[ind][i]);
             }
         }
-
-        size_t path = INF;
-        for (size_t i = 0; i < listSize; i++) {
-            path = std::min(path, dp[i][all]);
-        }
-
-        return path;
+        return dp[ind][mask];
     }
 
     int main() {
@@ -57,9 +35,27 @@
             }
         }
 
-        std::vector<size_t> prev(n, 0);
+        std::vector<size_t> prev;
+        dp = std::vector<std::vector<size_t>>(dist.size(), std::vector<size_t>(1 << dist.size(), INF));
+        dp[0][0] = 0;
 
-        std::cout << shortestPath(dist, &prev) << '\n';
+        std::cout << shortestPath(0, (1 << n) - 1, dist) << '\n';
+
+        size_t i = 0;
+        size_t mask = (1 << n) - 1;
+        prev.push_back(0);
+
+        while(mask != 0) {
+            for (size_t j = 0; j < n; j++) {
+                if (contains(mask, j) && dp[i][mask] == dp[j][mask - (1 << j)] + dist[i][j]) {
+                    prev.push_back(j);
+                    i = j;
+                    mask -= (1 << j);
+                    continue;
+                }
+            }
+        }
+
         for (size_t i = 0; i < prev.size(); i++)
             std::cout << prev[i] << ' ';
 
