@@ -1,62 +1,78 @@
     #include <iostream>
     #include <vector>
-    #include <limits>
+    #include <climits>
 
-    static const size_t INF = 14 * 1e6;
+    static const int64_t INF = __INT64_MAX__ / 100;
 
-    size_t shortestPath(size_t ind, size_t mask, std::vector<std::vector<size_t>>& dist);
-    inline bool contains(size_t mask, size_t v);
+    int64_t shortestPath(std::vector<std::vector<int64_t>>& dist);
+    void backTrace(std::vector<std::vector<int64_t>>& dist);
+    inline bool contains(int64_t mask, int64_t v);
 
-    inline bool contains(size_t mask, size_t v) {
-        return mask & (1 << v);
+    inline bool contains(int64_t mask, int64_t v) {
+        return mask & (1LL << v);
     }
 
-    std::vector<std::vector<size_t>> dp;
+    std::vector<std::vector<int64_t>> dp;
+    std::vector<int64_t> prev;
 
-    size_t shortestPath(size_t ind, size_t mask, std::vector<std::vector<size_t>>& dist) {
-        if (dp[ind][mask] != INF) return dp[ind][mask];
+int64_t shortestPath(std::vector<std::vector<int64_t>>& dist) {
+    int64_t maxMask = (1 << dist.size()) - 1;
 
-        for (size_t i = 0; i < dist.size(); i++) {
-            if (contains(mask, i)) {
-                dp[ind][mask] = std::min(dp[ind][mask], shortestPath(i, mask - (1 << i), dist) + dist[ind][i]);
+    int64_t listSize = dist.size();
+    for (int mask = 0; mask <= maxMask; mask++) {
+        
+        for (int i = 0; i < listSize; ++i) {
+
+            for (int j = 0; j < listSize; ++j) {
+
+                if (mask & (1 << j)) {
+                    dp[i][mask] = std::min(dp[i][mask], dp[j][mask - (1 << j)] + dist[i][j]);
+                }
             }
         }
-        return dp[ind][mask];
+    }
+
+    return dp[0][maxMask];
+}
+
+    void backTrace(std::vector<std::vector<int64_t>>& dist) {
+        int64_t ind  = 0;
+        int64_t mask = (1LL << dist.size()) - 1LL;
+
+        while (mask > 0)
+        {
+            for (int64_t j = 0; j < dist.size(); j++) {
+                if (contains(mask, j) && dp[ind][mask] == dp[j][mask ^ (1LL << j)] + dist[ind][j]) {
+                    if (j > 0) prev.push_back(j);
+                    ind = j;
+                    mask -= (1LL << j);
+                }
+            }
+        }
+        
     }
 
     int main() {
-        short n = 0;
+        int64_t n = 0;
         std::cin >> n;
 
-        std::vector<std::vector<size_t>> dist(n, std::vector<size_t>(n, 0));
-        for (short i = 0; i < n; i++) {
-            for (short j = 0; j < n; j++) {
+        std::vector<std::vector<int64_t>> dist(n + 1LL, std::vector<int64_t>(n + 1LL, 0));
+
+        for (int64_t i = 1LL; i <= n; i++) {
+            for (int64_t j = 1LL; j <= n; j++) {
                 std::cin >> dist[i][j];
             }
         }
 
-        std::vector<size_t> prev;
-        dp = std::vector<std::vector<size_t>>(dist.size(), std::vector<size_t>(1 << dist.size(), INF));
+        dp = std::vector<std::vector<int64_t>>(dist.size(), std::vector<int64_t>(1LL << dist.size(), INF));
         dp[0][0] = 0;
 
-        std::cout << shortestPath(0, (1 << n) - 1, dist) << '\n';
+        int64_t res = shortestPath(dist);
 
-        size_t i = 0;
-        size_t mask = (1 << n) - 1;
-        prev.push_back(0);
+        std::cout << res << '\n';
+        backTrace(dist);
 
-        while(mask != 0) {
-            for (size_t j = 0; j < n; j++) {
-                if (contains(mask, j) && dp[i][mask] == dp[j][mask - (1 << j)] + dist[i][j]) {
-                    prev.push_back(j);
-                    i = j;
-                    mask -= (1 << j);
-                    continue;
-                }
-            }
-        }
-
-        for (size_t i = 0; i < prev.size(); i++)
+        for (int64_t i = prev.size() - 1; i >= 0; i--)
             std::cout << prev[i] << ' ';
 
         return 0;
