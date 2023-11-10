@@ -3,11 +3,28 @@
 
 static const int PLUS_INF = 1e8;
 
-void generateD  (std::vector<int>* d, std::vector<int>& coords);
-void generateDP (std::vector<int>* d, std::vector<int>& coords, int** dp, int m);
-void printAnswer(std::vector<int>* d, std::vector<int>& coords, int** dp, int m);
+int** getInput                (int n, int m, std::vector<int>& coords);
+void  generateDistanceArray   (std::vector<int>* d, std::vector<int>& coords);
+void  generateDistancesDPArray(std::vector<int>* d, std::vector<int>& coords, int** distancesDPArr, int m);
+void  printAnswer             (std::vector<int>* d, std::vector<int>& coords, int** distancesDPArr, int m);
+void  freeMemory              (int** distancesDPArr, int n);
 
-void generateD(std::vector<int>* d, std::vector<int>& coords) {
+int** getInput(int n, int m, std::vector<int>& coords) {
+    int** distancesDPArr = new int*[n];
+    for (int i = 0; i < n; i++) {
+        distancesDPArr[i] = new int[n];
+        for (int j = 0; j < n ;j++) {
+            distancesDPArr[i][j] = 0;
+        }
+    }
+
+    for (int i = 0; i < n; i++)
+        std::cin >> coords[i];
+
+    return distancesDPArr;
+}
+
+void generateDistanceArray(std::vector<int>* d, std::vector<int>& coords) {
     if (!d) return;
 
     size_t coordsSize = coords.size();
@@ -20,8 +37,8 @@ void generateD(std::vector<int>* d, std::vector<int>& coords) {
     }
 }
 
-void generateDP(std::vector<int>* d, std::vector<int>& coords, int** dp, int m) {
-    if (!d || !dp) return;
+void generateDistancesDPArray(std::vector<int>* d, std::vector<int>& coords, int** distancesDPArr, int m) {
+    if (!d || !distancesDPArr) return;
 
     size_t coordsSize = coords.size();
     std::vector<int> temp(coordsSize, 0);
@@ -42,7 +59,7 @@ void generateDP(std::vector<int>* d, std::vector<int>& coords, int** dp, int m) 
                 summa += (r - j - 1) * (coords[j + 1] - coords[j]);
                 if (summa + (*d)[j] < temp[i]) {
                     temp[i] = summa + (*d)[j];
-                    dp[i][k] = j;
+                    distancesDPArr[i][k] = j;
                 }
             }
         }
@@ -50,8 +67,8 @@ void generateDP(std::vector<int>* d, std::vector<int>& coords, int** dp, int m) 
     }
 }
 
-void printAnswer(std::vector<int>* d, std::vector<int>& coords, int** dp, int m) {
-    if (!d || !dp) return;
+void printAnswer(std::vector<int>* d, std::vector<int>& coords, int** distancesDPArr, int m) {
+    if (!d || !distancesDPArr) return;
 
     size_t coordsSize = coords.size();
 
@@ -75,7 +92,7 @@ void printAnswer(std::vector<int>* d, std::vector<int>& coords, int** dp, int m)
     while (k >= 0)
     {
         (*d)[k] = rightBase;
-        rightBase = dp[rightBase][k];
+        rightBase = distancesDPArr[rightBase][k];
         k--;
     }
     
@@ -84,31 +101,26 @@ void printAnswer(std::vector<int>* d, std::vector<int>& coords, int** dp, int m)
     }
 }
 
+void freeMemory(int** distancesDPArr, int n) {
+    for (int i = 0; i < n; i++) {
+        delete[] distancesDPArr[i];
+    }
+    delete[] distancesDPArr;
+}
+
 int main() {
     int n = 0, m = 0;
     std::cin >> n >> m;
 
     std::vector<int> coords(n, 0);
     std::vector<int> d(n, 0);
-    int** dp = new int*[n];
-    for (int i = 0; i < n; i++) {
-        dp[i] = new int[n];
-        for (int j = 0; j < n ;j++) {
-            dp[i][j] = 0;
-        }
-    }
 
-    for (int i = 0; i < n; i++)
-        std::cin >> coords[i];
+    int** distancesDPArr = getInput(n, m, coords);
 
-    generateD  (&d, coords);
-    generateDP (&d, coords, dp, m);
-    printAnswer(&d, coords, dp, m);
-    
-    for (int i = 0; i < n; i++) {
-        delete[] dp[i];
-    }
-    delete[] dp;
+    generateDistanceArray(&d, coords);
+    generateDistancesDPArray(&d, coords, distancesDPArr, m);
+    printAnswer(&d, coords, distancesDPArr, m);
+    freeMemory(distancesDPArr, n);
 
     return 0;
 }
