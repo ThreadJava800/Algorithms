@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cmath>
 
 #define ON_ERROR(expr, errStr, retVal) {                 \
     if (expr) {                                           \
@@ -13,7 +12,9 @@ size_t* mulMatrix(size_t* matrix1, size_t* matrix2, size_t matrixSize);
 size_t* matrixPow(size_t* matrix,  size_t power,    size_t matrixSize);
 size_t  getAmount(size_t n);
 
-static const size_t MOD_NUMBER = 1000003;
+// The problem is solved using a 5*5 annunciating matrix per degree
+static const int    MATRIX_SIZE = 5;
+static const size_t MOD_NUMBER  = 1000003;
 
 size_t* mulMatrix(size_t* matrix1, size_t* matrix2, size_t matrixSize) { 
     ON_ERROR(!matrix1 || !matrix2, "Matrixes are nullptr!", nullptr);
@@ -54,7 +55,7 @@ size_t* matrixPow(size_t* matrix, size_t power, size_t matrixSize) {
 size_t getAmount(size_t n) {
     if (n == 0 || n == 1) return n;
 
-    size_t matrix[5 * 5] = {
+    size_t matrix[MATRIX_SIZE * MATRIX_SIZE] = {
         1, 1, 1, 1, 1,
         1, 0, 0, 0, 0,
         0, 1, 0, 0, 0,
@@ -62,7 +63,7 @@ size_t getAmount(size_t n) {
         0, 0, 0, 1, 0
     };
 
-    size_t* result = matrixPow(matrix, n - 1, 5);
+    size_t* result = matrixPow(matrix, n - 1, MATRIX_SIZE);
     ON_ERROR(!result, "Matrix is nullptr!", 0);
 
     size_t answer = result[0];
