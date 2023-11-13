@@ -1,3 +1,4 @@
+#include <queue>
 #include <vector>
 #include <limits>
 #include <iostream>
@@ -32,30 +33,28 @@ public:
     }
 
     int dijkstra(int start_vert, int end_vert) {
-        std::vector<int>  d     (vert_cnt, INF);
-        std::vector<bool> marked(vert_cnt, false);
+        std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> heap;
+        std::vector<int> d(vert_cnt, INF);
 
         d[start_vert] = 0;
+        heap.push({start_vert, 0});
 
-        for (int i = 0; i < vert_cnt; i++) {
-            int cur_vert = -1;
-
-            for (int j = 0; j < vert_cnt; j++) {
-                if (!marked[j] && (cur_vert == -1 || d[j] < d[cur_vert])) cur_vert = j;
-            }
-
-            if (d[cur_vert] == INF) break;
-            marked[cur_vert] = true;
+        while (!heap.empty())
+        {
+            int cur_vert = heap.top().first; heap.pop();
 
             for (auto edge : edges[cur_vert]) {
                 int to = edge.first;
                 int w  = edge.second;
 
-                d[to] = std::min(d[to], d[cur_vert] + w);
+                if (d[cur_vert] + w < d[to]) {
+                    d[to] = d[cur_vert] + w;
+                    heap.push({to, d[to]});
+                }
             }
         }
-
-        return d[end_vert];    
+        
+        return d[end_vert];
     }
 };
 
