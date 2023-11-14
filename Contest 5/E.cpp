@@ -8,14 +8,14 @@ using pairVec = std::vector<std::pair<int, int>>;
 //--------------------------------------------------------------------
 
 intDim2*          readArguments(pairVec& startEdges);
-void              dfs(intDim2& paths, 
-                      pairVec& times, 
-                      int bfsCnt, 
-                      std::pair<int, int> curPoint, 
-                      std::vector<bool>& used,
-                      std::vector<int>& edge);
+void              dfs(const intDim2& paths, 
+                            pairVec& times, 
+                            int bfsCnt, 
+                      const std::pair<int, int> curPoint, 
+                            std::vector<bool>& used,
+                            std::vector<int>& edge);
                             
-pairVec*          dfsDriver(intDim2& paths, int edgeCount);
+std::vector<int>* dfsDriver(const intDim2& paths);
 
 //--------------------------------------------------------------------
 
@@ -42,12 +42,12 @@ intDim2* readArguments(pairVec& startEdges) {
 
 //--------------------------------------------------------------------
 
-void dfs(intDim2& paths, 
-        pairVec& times, 
-        int bfsCnt, 
-        std::pair<int, int> curPoint, 
-        std::vector<bool>& used, 
-        std::vector<int>& edge) 
+void dfs(const intDim2& paths, 
+               pairVec& times, 
+               int bfsCnt, 
+         const std::pair<int, int> curPoint, 
+               std::vector<bool>& used, 
+               std::vector<int>& edge) 
 {
     used[curPoint.first] = true;
     times[curPoint.first].first = times[curPoint.first].second = bfsCnt++;
@@ -72,7 +72,7 @@ void dfs(intDim2& paths,
     }
 }
 
-std::vector<int>* dfsDriver(intDim2& paths) {
+std::vector<int>* dfsDriver(const intDim2& paths) {
     size_t vertexCnt = paths.size();
 
     std::vector<bool> used  = std::vector(vertexCnt, false);
@@ -99,7 +99,6 @@ int main() {
     std::cout << edgeCnt << '\n';
 
     std::sort(bridgeEdges->begin(), bridgeEdges->end());
-
     for (int i = 0; i < edgeCnt; i++) std::cout << (*bridgeEdges)[i] << '\n';
 
     delete paths; delete bridgeEdges;
