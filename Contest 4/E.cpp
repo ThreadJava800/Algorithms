@@ -5,17 +5,17 @@ static const int PLUS_INF = 1e8;
 
 using ivec2 = std::vector<std::vector<int>>;
 
-void  getInput                (int n, int m, std::vector<int>& coords, ivec2& distancesDPArr);
-void  generateDistanceArray   (std::vector<int>& d, std::vector<int>& coords);
-void  generateDistancesDPArray(std::vector<int>* d, std::vector<int>& coords, ivec2& distancesDPArr, int m);
-void  printAnswer             (std::vector<int>& d, std::vector<int>& coords, ivec2& distancesDPArr, int m);
+void  getInput                (const size_t n, const size_t m, std::vector<int>& coords);
+void  generateDistanceArray   (std::vector<int>& d, const std::vector<int>& coords);
+void  generateDistancesDPArray(std::vector<int>* d, const std::vector<int>& coords,       ivec2& distancesDPArr, const int m);
+void  printAnswer             (std::vector<int>& d, const std::vector<int>& coords, const ivec2& distancesDPArr, const int m);
 
-void getInput(int n, int m, std::vector<int>& coords, ivec2& distancesDPArr) {
+void getInput(const size_t n, const size_t m, std::vector<int>& coords) {
     for (int i = 0; i < n; i++)
         std::cin >> coords[i];
 }
 
-void generateDistanceArray(std::vector<int>& d, std::vector<int>& coords) {
+void generateDistanceArray(std::vector<int>& d, const std::vector<int>& coords) {
     size_t coordsSize = coords.size();
     for (int i = 0; i < coordsSize; i++) {
         int sum = 0;
@@ -26,7 +26,7 @@ void generateDistanceArray(std::vector<int>& d, std::vector<int>& coords) {
     }
 }
 
-void generateDistancesDPArray(std::vector<int>* d, std::vector<int>& coords, ivec2& distancesDPArr, int m) {
+void generateDistancesDPArray(std::vector<int>* d, const std::vector<int>& coords, ivec2& distancesDPArr, const int m) {
     if (!d) return;
 
     size_t coordsSize = coords.size();
@@ -56,7 +56,7 @@ void generateDistancesDPArray(std::vector<int>* d, std::vector<int>& coords, ive
     }
 }
 
-void printAnswer(std::vector<int>& d, std::vector<int>& coords, ivec2& distancesDPArr, int m) {
+void printAnswer(std::vector<int>& d, const std::vector<int>& coords, const ivec2& distancesDPArr, const int m) {
     size_t coordsSize = coords.size();
 
     int mini      = PLUS_INF;
@@ -89,18 +89,18 @@ void printAnswer(std::vector<int>& d, std::vector<int>& coords, ivec2& distances
 }
 
 int main() {
-    int n = 0, m = 0;
+    size_t n = 0, m = 0;
     std::cin >> n >> m;
 
     std::vector<int> coords(n, 0);
     std::vector<int> d(n, 0);
 
     ivec2 distancesDPArr = std::vector<std::vector<int>>();
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         distancesDPArr.push_back(std::vector<int>(m));
     }
 
-    getInput(n, m, coords, distancesDPArr);
+    getInput(n, m, coords);
 
     generateDistanceArray(d, coords);
     generateDistancesDPArray(&d, coords, distancesDPArr, m);
