@@ -2,19 +2,19 @@
 #include <vector>
 
 inline bool contains(size_t mask, int check);
-void makeDP (std::vector<std::vector<bool>>* dp, size_t N);
-void makeDP2(std::vector<std::vector<bool>>* dp, std::vector<std::vector<size_t>>* dp2, size_t M);
-size_t getCount(std::vector<std::vector<bool>>* dp, std::vector<std::vector<size_t>>* dp2, size_t M);
+void   makeAreaDP  (std::vector<std::vector<bool>>* areaDP, size_t N);
+void   makeAreaDP2 (std::vector<std::vector<bool>>* areaDP, std::vector<std::vector<size_t>>* areaDP2, size_t M);
+size_t getCount    (std::vector<std::vector<bool>>* areaDP, std::vector<std::vector<size_t>>* areaDP2, size_t M);
 
 inline bool contains(size_t mask, int check) {
     return mask & (1 << check);
 }
 
-void makeDP(std::vector<std::vector<bool>>* dp, size_t N) {
-    if (!dp) return;
+void makeDP(std::vector<std::vector<bool>>* areaDP, size_t N) {
+    if (!areaDP) return;
 
-    for (size_t i = 0; i < dp->size(); i++) {
-        for (size_t j = 0; j < dp->size(); j++) {
+    for (size_t i = 0; i < areaDP->size(); i++) {
+        for (size_t j = 0; j < areaDP->size(); j++) {
             bool cell = true;
 
             for (size_t k = 0; k < N - 1; k++) {
@@ -24,31 +24,31 @@ void makeDP(std::vector<std::vector<bool>>* dp, size_t N) {
                 if (!cell) break;
             }
 
-            (*dp)[i][j] = cell;
+            (*areaDP)[i][j] = cell;
         }
     }
 }
 
-void makeDP2(std::vector<std::vector<bool>>* dp, std::vector<std::vector<size_t>>* dp2, size_t M) {
-    if (!dp || !dp2) return;
+void makeDP2(std::vector<std::vector<bool>>* areaDP, std::vector<std::vector<size_t>>* areaDP2, size_t M) {
+    if (!areaDP || !areaDP2) return;
 
-    for (size_t i = 0; i < dp->size(); i++) (*dp2)[0][i] = 1;
+    for (size_t i = 0; i < areaDP->size(); i++) (*areaDP2)[0][i] = 1;
 
     for (size_t i = 1; i < M; i++) {
-        for (size_t j = 0; j < dp->size(); j++) {
-            for (size_t k = 0; k < dp->size(); k++) {
-                if ((*dp)[j][k]) (*dp2)[i][k] += (*dp2)[i - 1][j];
+        for (size_t j = 0; j < areaDP->size(); j++) {
+            for (size_t k = 0; k < areaDP->size(); k++) {
+                if ((*areaDP)[j][k]) (*areaDP2)[i][k] += (*areaDP2)[i - 1][j];
             }
         }
     }
 }
 
-size_t getCount(std::vector<std::vector<bool>>* dp, std::vector<std::vector<size_t>>* dp2, size_t M) {
-    if (!dp || !dp2) return 0;
+size_t getCount(std::vector<std::vector<bool>>* areaDP, std::vector<std::vector<size_t>>* areaDP2, size_t M) {
+    if (!areaDP || !areaDP2) return 0;
 
     size_t count = 0;
 
-    for (size_t i = 0; i < dp->size(); i++) count += (*dp2)[M - 1][i];
+    for (size_t i = 0; i < areaDP->size(); i++) count += (*areaDP2)[M - 1][i];
 
     return count;
 }
