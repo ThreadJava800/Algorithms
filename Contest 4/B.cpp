@@ -8,15 +8,15 @@
 }                                                             \
 
 
-size_t* mulMatrix(size_t* matrix1, size_t* matrix2, size_t matrixSize);
-size_t* matrixPow(size_t* matrix,  size_t power,    size_t matrixSize);
-size_t  getAmount(size_t n);
+size_t* mulMatrix(const size_t* matrix1, const size_t* matrix2, const size_t matrixSize);
+size_t* matrixPow(      size_t* matrix,  const size_t  power,   const size_t matrixSize);
+size_t  getAmount(const size_t  n);
 
 // The problem is solved using a 5*5 annunciating matrix per degree
 static const int    MATRIX_SIZE = 5;
 static const size_t MOD_NUMBER  = 1000003;
 
-size_t* mulMatrix(size_t* matrix1, size_t* matrix2, size_t matrixSize) { 
+size_t* mulMatrix(const size_t* matrix1, const size_t* matrix2, const size_t matrixSize) { 
     ON_ERROR(!matrix1 || !matrix2, "Matrixes are nullptr!", nullptr);
 
     size_t* result = new size_t[matrixSize * matrixSize];
@@ -39,7 +39,7 @@ size_t* mulMatrix(size_t* matrix1, size_t* matrix2, size_t matrixSize) {
     return result;
 }
 
-size_t* matrixPow(size_t* matrix, size_t power, size_t matrixSize) {
+size_t* matrixPow(size_t* matrix, const size_t power, const size_t matrixSize) {
     ON_ERROR(!matrix, "Matrix is nullptr!", nullptr);
 
     if (power == 1) return matrix;
@@ -52,7 +52,7 @@ size_t* matrixPow(size_t* matrix, size_t power, size_t matrixSize) {
     return mulMatrix(matrix, matrix, matrixSize);
 }
 
-size_t getAmount(size_t n) {
+size_t getAmount(const size_t n) {
     if (n == 0 || n == 1) return n;
 
     size_t matrix[MATRIX_SIZE * MATRIX_SIZE] = {
