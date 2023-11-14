@@ -7,11 +7,11 @@ using ivec2 = std::vector<std::vector<int>>;
 
 void  getInput                (const size_t n, const size_t m, std::vector<int>& coords);
 void  generateDistanceArray   (std::vector<int>& d, const std::vector<int>& coords);
-void  generateDistancesDPArray(std::vector<int>* d, const std::vector<int>& coords,       ivec2& distancesDPArr, const int m);
-void  printAnswer             (std::vector<int>& d, const std::vector<int>& coords, const ivec2& distancesDPArr, const int m);
+void  generateDistancesDPArray(std::vector<int>* d, const std::vector<int>& coords,       ivec2& distancesDPArr, const size_t m);
+void  printAnswer             (std::vector<int>& d, const std::vector<int>& coords, const ivec2& distancesDPArr, const size_t m);
 
 void getInput(const size_t n, const size_t m, std::vector<int>& coords) {
-    for (int i = 0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
         std::cin >> coords[i];
 }
 
@@ -26,15 +26,15 @@ void generateDistanceArray(std::vector<int>& d, const std::vector<int>& coords) 
     }
 }
 
-void generateDistancesDPArray(std::vector<int>* d, const std::vector<int>& coords, ivec2& distancesDPArr, const int m) {
+void generateDistancesDPArray(std::vector<int>* d, const std::vector<int>& coords, ivec2& distancesDPArr, const size_t m) {
     if (!d) return;
 
     size_t coordsSize = coords.size();
-    std::vector<int> temp(coordsSize, 0);
+    std::vector<int> kthDistances(coordsSize, 0);
 
     for (int k = 1; k < m; k++) {
         for (int i = 0; i < coordsSize; i++) {
-            temp[i] = PLUS_INF;
+            kthDistances[i] = PLUS_INF;
 
             int r = i;
             int summa = 0;
@@ -46,17 +46,17 @@ void generateDistancesDPArray(std::vector<int>* d, const std::vector<int>& coord
                 }
 
                 summa += (r - j - 1) * (coords[j + 1] - coords[j]);
-                if (summa + (*d)[j] < temp[i]) {
-                    temp[i] = summa + (*d)[j];
+                if (summa + (*d)[j] < kthDistances[i]) {
+                    kthDistances[i] = summa + (*d)[j];
                     distancesDPArr[i][k] = j;
                 }
             }
         }
-        *d = temp;
+        *d = kthDistances;
     }
 }
 
-void printAnswer(std::vector<int>& d, const std::vector<int>& coords, const ivec2& distancesDPArr, const int m) {
+void printAnswer(std::vector<int>& d, const std::vector<int>& coords, const ivec2& distancesDPArr, const size_t m) {
     size_t coordsSize = coords.size();
 
     int mini      = PLUS_INF;
