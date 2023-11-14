@@ -1,3 +1,4 @@
+#include <ios>
 #include <vector>
 #include <iostream>
 
@@ -14,24 +15,19 @@ size_t maxi = 0;
 class DB {
 private:
     std::vector<Table> tables;
+    std::vector<int>   realLinks;
 
 public:
     explicit DB() = default;
 
     void addTable(size_t _table_size) {
-        tables.push_back(Table(_table_size));
+        tables   .push_back(Table(_table_size));
+        realLinks.push_back(-1);
     }
 
     int getRealLink(size_t _table_num) {
-        int realLink = _table_num;
-        int tSymLink = tables[_table_num].symbolic_link;
-
-        while (tSymLink != -1) {
-            realLink = tSymLink;
-            tSymLink = tables[tSymLink].symbolic_link;
-        }
-
-        return realLink;
+        int realLink = realLinks[_table_num];
+        return realLink == -1 ? _table_num : realLink;
     }
 
     void uniteTables(int _dest, int _source) {
@@ -40,14 +36,17 @@ public:
 
         tables[dest]  .table_size += tables[source].table_size;
 
-        tables[source].symbolic_link = dest;
-        tables[source].table_size    = 0;
+        realLinks[source]         = getRealLink(dest);
+        tables[source].table_size = 0;
 
         maxi = std::max(maxi, tables[dest].table_size);
     }
 };
 
 int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(0); std::cout.tie(0);
+
     int n = 0, m = 0;
     std::cin >> n >> m;
 
