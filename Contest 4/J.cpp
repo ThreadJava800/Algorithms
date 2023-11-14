@@ -98,6 +98,7 @@ int main() {
         std::cout << vecStr[size_t(i)] + 1 << ' ';
     }
 
+    for (size_t i = 0; i <= n; i++) delete[] backTrace[i];
     delete[] backTrace;
 
     return 0;
