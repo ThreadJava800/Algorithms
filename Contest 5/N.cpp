@@ -4,7 +4,7 @@
 
 struct Table {
     size_t table_size;
-    int    symbolic_link;
+    size_t    symbolic_link;
 
     explicit Table()                   : table_size(0)          , symbolic_link(-1) {}
     explicit Table(size_t _table_size) : table_size(_table_size), symbolic_link(-1) {}
@@ -15,29 +15,34 @@ size_t maxi = 0;
 class DB {
 private:
     std::vector<Table> tables;
-    std::vector<int>   realLinks;
+    std::vector<size_t>   ranks;
+    std::vector<size_t>   realLinks;
 
 public:
     explicit DB() = default;
 
     void addTable(size_t _table_size) {
         tables   .push_back(Table(_table_size));
-        realLinks.push_back(-1);
+        ranks    .push_back(0);
+        realLinks.push_back(tables.size() - 1);
+
+        maxi = std::max(maxi, _table_size);
     }
 
-    int getRealLink(size_t _table_num) {
-        int realLink = realLinks[_table_num];
-        return realLink == -1 ? _table_num : realLink;
+    size_t getRealLink(size_t _table_num) {
+        if (_table_num == realLinks[_table_num]) return _table_num;
+        return realLinks[_table_num] = getRealLink(realLinks[_table_num]);
     }
 
-    void uniteTables(int _dest, int _source) {
+    void uniteTables(size_t _dest, size_t _source) {
         size_t dest = getRealLink(_dest), source = getRealLink(_source);
         if (dest == source) return;
 
-        tables[dest]  .table_size += tables[source].table_size;
+        if (ranks[dest] <  ranks[source]) std::swap(dest, source);
+        if (ranks[dest] == ranks[source]) ranks[dest]++;
 
-        realLinks[source]         = getRealLink(dest);
-        tables[source].table_size = 0;
+        realLinks[source] = dest;
+        tables[dest].table_size += tables[source].table_size;
 
         maxi = std::max(maxi, tables[dest].table_size);
     }
@@ -47,20 +52,20 @@ int main() {
     std::ios::sync_with_stdio(false);
     std::cin.tie(0); std::cout.tie(0);
 
-    int n = 0, m = 0;
+    size_t n = 0, m = 0;
     std::cin >> n >> m;
 
     DB mainDB = DB();
 
-    for (int i = 0; i < n; i++) {
-        int size = 0;
+    for (size_t i = 0; i < n; i++) {
+        size_t size = 0;
         std::cin >> size;
 
         mainDB.addTable(size);
     }
 
-    for (int i = 0; i < m; i++) {
-        int dest = 0, source = 0;
+    for (size_t i = 0; i < m; i++) {
+        size_t dest = 0, source = 0;
         std::cin >> dest >> source;
 
         mainDB.uniteTables(--dest, --source);
