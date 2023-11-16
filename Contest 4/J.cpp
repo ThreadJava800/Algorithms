@@ -10,13 +10,15 @@ enum BackTraceMode {
     SECOND = 2
 };
 
+inline void printVectorBackwards(const std::vector<size_t>& vec);
+
 // backtrace indexing = string index + 1
 // so len(str1) = n - 1 and len(str2) = m - 1
-size_t buildBacktraceArr(const std::string& str1, const std::string& str2, lluvec2& backtraceArr, const size_t n, const size_t m);
-void doBacktrace        (const std::string& str1, const std::string& str2, lluvec2& backtraceArr, std::vector<size_t>& meets, const BackTraceMode mode);
-void printLength        (const std::string& str1, const std::string& str2, lluvec2& backTrace);
-void printBacktrace     (const std::string& str1, const std::string& str2, lluvec2& backTrace);
-
+size_t buildBacktraceArr (const std::string& str1, const std::string& str2, lluvec2& backtraceArr, const size_t n, const size_t m);
+void   doBacktrace       (const std::string& str1, const std::string& str2, lluvec2& backtraceArr, std::vector<size_t>& meets, const BackTraceMode mode);
+size_t calculateLISLength(const std::string& str1, const std::string& str2, lluvec2& backTrace);
+void   printLISIndexes   (const std::string& str1, const std::string& str2, lluvec2& backTrace);
+ 
 size_t buildBacktraceArr(const std::string& str1, const std::string& str2, lluvec2& backtraceArr, const size_t n, const size_t m) {
     size_t str1Len = n - 1;
     size_t str2Len = m - 1;
@@ -57,7 +59,7 @@ void doBacktrace (const std::string& str1, const std::string& str2, lluvec2& bac
     }
 }
 
-void printLength(const std::string& str1, const std::string& str2, lluvec2& backTrace) {
+size_t calculateLISLength(const std::string& str1, const std::string& str2, lluvec2& backTrace) {
     size_t n = str1.length();
     size_t m = str2.length();
 
@@ -65,23 +67,26 @@ void printLength(const std::string& str1, const std::string& str2, lluvec2& back
         backTrace.push_back(std::vector<size_t>(m + 1));
     }
 
-    std::cout << buildBacktraceArr(str1, str2, backTrace, n + 1, m + 1) << '\n';
+    return buildBacktraceArr(str1, str2, backTrace, n + 1, m + 1) << '\n';
 }
 
-void printBacktrace(const std::string& str1, const std::string& str2, lluvec2& backTrace) {
+inline void printVectorBackwards(const std::vector<size_t>& vec) {
+    for (long i = static_cast<long>(vec.size()) - 1; i >= 0; i--) {
+        std::cout << vec[size_t(i)] + 1 << ' ';
+    }
+    std::cout << '\n';
+}
+
+void printLISIndexes(const std::string& str1, const std::string& str2, lluvec2& backTrace) {
     std::vector<size_t> vecStr;
     doBacktrace(str1, str2, backTrace, vecStr, FIRST);
 
-    for (long i = (long)(vecStr.size()) - 1; i >= 0; i--) {
-        std::cout << vecStr[size_t(i)] + 1 << ' ';
-    }
-    std::cout << '\n';
+    printVectorBackwards(vecStr);
 
     vecStr.clear();
     doBacktrace(str1, str2, backTrace, vecStr, SECOND);
-    for (long i = (long)(vecStr.size()) - 1; i >= 0; i--) {
-        std::cout << vecStr[size_t(i)] + 1 << ' ';
-    }
+    
+    printVectorBackwards(vecStr);
 }
 
 int main() {
@@ -92,8 +97,8 @@ int main() {
     std::cin >> str1;
     std::cin >> str2;
 
-    printLength   (str1, str2, backTrace);
-    printBacktrace(str1, str2, backTrace);
+    std::cout << calculateLISLength(str1, str2, backTrace) << '\n';
+    printLISIndexes(str1, str2, backTrace);
 
     return 0;
 }
