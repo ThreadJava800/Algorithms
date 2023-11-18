@@ -79,6 +79,23 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "csetjmp": "cpp",
+        "csignal": "cpp",
+        "barrier": "cpp",
+        "cfenv": "cpp",
+        "complex": "cpp",
+        "coroutine": "cpp",
+        "cuchar": "cpp",
+        "expected": "cpp",
+        "regex": "cpp",
+        "latch": "cpp",
+        "ranges": "cpp",
+        "scoped_allocator": "cpp",
+        "shared_mutex": "cpp",
+        "spanstream": "cpp",
+        "stacktrace": "cpp",
+        "syncstream": "cpp",
+        "typeindex": "cpp"
     }
 }
