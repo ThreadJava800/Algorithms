@@ -1,30 +1,26 @@
 #include <vector>
 #include <iostream>
 
-using intDim2 = std::vector<std::vector<int>>;
+//-------------------------------------------------------------------------
+
+std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> readArguments();
+
+void             topSort      (std::vector<int>& sorted, const std::vector<std::vector<int>>& graph, std::vector<bool>& used, const int vertInd);
+std::vector<int> topSortDriver(const std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> graphs);
+
+void                          dfs      (std::vector<int>& components, const std::vector<std::vector<int>>& graph, std::vector<bool>& used, const int vertInd);
+std::vector<std::vector<int>> dfsDriver(const std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>>& graphs, const std::vector<int>& sorted);
+
+void printAnswer(const std::vector<std::vector<int>>& components, const size_t N);
 
 //-------------------------------------------------------------------------
 
-std::pair<intDim2*, intDim2*> readArguments();
-
-void              topSort      (std::vector<int>& sorted, const intDim2& graph, std::vector<bool>& used, const int vertInd);
-std::vector<int>* topSortDriver(const std::pair<intDim2*, intDim2*> graphs);
-
-void     dfs      (std::vector<int>& components, const intDim2& graph, std::vector<bool>& used, const int vertInd);
-intDim2* dfsDriver(const std::pair<intDim2*, intDim2*> graphs, const std::vector<int>& sorted);
-
-void printAnswer(const intDim2& components, const size_t N);
-
-void freeMemory(const std::pair<intDim2*, intDim2*> graphs, const intDim2* components, const std::vector<int>* sorted);
-
-//-------------------------------------------------------------------------
-
-std::pair<intDim2*, intDim2*> readArguments() {
+std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> readArguments() {
     int N = 0, M = 0;
     std::cin >> N >> M;
 
-    intDim2* graph  = new std::vector(N, std::vector<int>());
-    intDim2* graphT = new std::vector(N, std::vector<int>());
+    std::vector<std::vector<int>> graph  = std::vector(N, std::vector<int>());
+    std::vector<std::vector<int>> graphT = std::vector(N, std::vector<int>());
 
     for (int i = 0; i < M; i++) {
         int p1 = 0, p2 = 0;
@@ -32,16 +28,16 @@ std::pair<intDim2*, intDim2*> readArguments() {
 
         p1--; p2--;
 
-        (*graph) [p1].push_back(p2);
-        (*graphT)[p2].push_back(p1);
+        graph [p1].push_back(p2);
+        graphT[p2].push_back(p1);
     }
 
-    return std::pair<intDim2*, intDim2*>(graph, graphT);
+    return std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>>(graph, graphT);
 }
 
 //-------------------------------------------------------------------------
 
-void topSort(std::vector<int>& sorted, const intDim2& graph, std::vector<bool>& used, const int vertInd) {
+void topSort(std::vector<int>& sorted, const std::vector<std::vector<int>>& graph, std::vector<bool>& used, const int vertInd) {
     used[vertInd] = true;
 
     size_t graphSize = graph[vertInd].size();
@@ -52,14 +48,14 @@ void topSort(std::vector<int>& sorted, const intDim2& graph, std::vector<bool>& 
     sorted.push_back(vertInd);
 }
 
-std::vector<int>* topSortDriver(const std::pair<intDim2*, intDim2*> graphs) {
-    size_t N = graphs.first->size();
+std::vector<int> topSortDriver(const std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> graphs) {
+    size_t N = graphs.first.size();
 
     std::vector<bool> used   = std::vector<bool>(N, false);
-    std::vector<int>* sorted = new std::vector<int>();
+    std::vector<int>  sorted = std::vector<int>();
 
     for (int i = 0; i < N; i++) {
-        if (!used[i]) topSort(*sorted, *graphs.first, used, i);
+        if (!used[i]) topSort(sorted, graphs.first, used, i);
     }
 
     return sorted;
@@ -67,7 +63,7 @@ std::vector<int>* topSortDriver(const std::pair<intDim2*, intDim2*> graphs) {
 
 //-------------------------------------------------------------------------
 
-void dfs(std::vector<int>& components, const intDim2& graph, std::vector<bool>& used, const int vertInd) {
+void dfs(std::vector<int>& components, const std::vector<std::vector<int>>& graph, std::vector<bool>& used, const int vertInd) {
     used[vertInd] = true;
     components.push_back(vertInd);
 
@@ -78,20 +74,20 @@ void dfs(std::vector<int>& components, const intDim2& graph, std::vector<bool>& 
 
 }
 
-intDim2* dfsDriver(const std::pair<intDim2*, intDim2*> graphs, const std::vector<int>& sorted) {
-    size_t N = graphs.first->size();
+std::vector<std::vector<int>> dfsDriver(const std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>>& graphs, const std::vector<int>& sorted) {
+    size_t N = graphs.first.size();
 
     std::vector<bool> used = std::vector(N, false);
 
     int componentCount  = 0;
-    intDim2* components = new std::vector<std::vector<int>>();
+    std::vector<std::vector<int>> components = std::vector<std::vector<int>>();
 
     for (int i = 0; i < N; i++) {
         int vertId = sorted[N - i - 1];
         if (!used[vertId]) {
-            components->push_back(std::vector<int>());
+            components.push_back(std::vector<int>());
 
-            dfs((*components)[componentCount], *graphs.second, used, vertId);
+            dfs(components[componentCount], graphs.second, used, vertId);
             componentCount++;
         }
     }
@@ -101,7 +97,7 @@ intDim2* dfsDriver(const std::pair<intDim2*, intDim2*> graphs, const std::vector
 
 //-------------------------------------------------------------------------
 
-void printAnswer(const intDim2& components, const size_t N) {
+void printAnswer(const std::vector<std::vector<int>>& components, const size_t N) {
     size_t componentCnt = components.size();
 
     std::cout << componentCnt << '\n';
@@ -119,22 +115,12 @@ void printAnswer(const intDim2& components, const size_t N) {
 
 //-------------------------------------------------------------------------
 
-void freeMemory(const std::pair<intDim2*, intDim2*> graphs, const intDim2* components, const std::vector<int>* sorted) {
-    delete graphs.first; delete graphs.second;
-    delete components;
-    delete sorted;
-}
-
-//-------------------------------------------------------------------------
-
 int main() {
-    std::pair<intDim2*, intDim2*> graphs = readArguments();
-    std::vector<int>* sorted = topSortDriver(graphs);
-    intDim2* components = dfsDriver(graphs, *sorted);
+    std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> graphs = readArguments();
+    std::vector<int> sorted = topSortDriver(graphs);
+    std::vector<std::vector<int>> components = dfsDriver(graphs, sorted);
 
-    printAnswer(*components, graphs.first->size());
-
-    freeMemory(graphs, components, sorted);
+    printAnswer(components, graphs.first.size());
 
     return 0;
 }
