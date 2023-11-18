@@ -2,9 +2,6 @@
 #include <iostream>
 #include <algorithm>
 
-using intDim2 = std::vector<std::vector<std::pair<int, int>>>;
-using pairVec = std::vector<std::pair<int, int>>;
-
 struct Edge {
     int from   = 0;
     int to     = 0;
@@ -29,7 +26,7 @@ private:
     std::vector<GraphTime>         time;
     std::vector<bool>              used;
 
-    void dfs(const GraphVertex curPoint, std::vector<int>& bridges) {
+    void bridgeDFS(const GraphVertex curPoint, std::vector<int>& bridges) {
         used[curPoint.vert] = true;
         time[curPoint.vert].in = time[curPoint.vert].out = timeCnt++;
 
@@ -42,7 +39,7 @@ private:
             if (used[edgeEnd]) time[curPoint.vert].out 
                                     = std::min(time[curPoint.vert].out, time[edgeEnd].in);
             else {
-                dfs({edgeEnd, curPoint.vert}, bridges);
+                bridgeDFS({edgeEnd, curPoint.vert}, bridges);
                 time[curPoint.vert].out 
                                     = std::min(time[curPoint.vert].out, time[edgeEnd].out);
 
@@ -72,7 +69,7 @@ public:
         time.resize(vertexCnt);
 
         for (int i = 0; i < vertexCnt; i++) {
-            if (!used[i]) dfs({i, -1}, bridges);
+            if (!used[i]) bridgeDFS({i, -1}, bridges);
         }
 
         return bridges;
@@ -81,20 +78,20 @@ public:
 
 //--------------------------------------------------------------------
 
-Graph readArguments     ();
+Graph readArguments     (std::istream& stream);
 void  printBridgesSorted(std::vector<int>& bridges);
                         
 //--------------------------------------------------------------------
 
-Graph readArguments() {
+Graph readArguments(std::istream& stream) {
     int N = 0, M = 0;
-    std::cin >> N >> M;
+    stream >> N >> M;
 
     Graph graph(N);
 
     for (int i = 0; i < M; i++) {
         int p1 = 0, p2 = 0;
-        std::cin >> p1 >> p2;
+        stream >> p1 >> p2;
 
         p1--; p2--;
 
@@ -116,7 +113,7 @@ void printBridgesSorted(std::vector<int>& bridges) {
 //--------------------------------------------------------------------
 
 int main() {
-    Graph graph = readArguments();
+    Graph graph = readArguments(std::cin);
 
     std::vector<int> bridges = graph.findBridges();
     printBridgesSorted(bridges);
