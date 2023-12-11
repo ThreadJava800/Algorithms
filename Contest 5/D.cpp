@@ -1,26 +1,103 @@
 #include <vector>
 #include <iostream>
 
+class Graph {
+private:
+    std::vector<std::vector<int>> edges;
+    std::vector<int>              sorted_vertexes;
+    std::vector<std::vector<int>> strong_components;
+    std::vector<std::vector<int>> edges_transposed;
+
+public:
+    explicit Graph(const int N) {
+        edges           .resize(N);
+        edges_transposed.resize(N);
+    }
+
+    void addEdge(int from, int to) {
+        edges[from]         .push_back(to);
+        edges_transposed[to].push_back(from);
+    }
+
+    void _topSort(std::vector<int>& sorted, std::vector<bool>& used, const int vertInd) {
+        used[vertInd] = true;
+
+        size_t graphSize = edges[vertInd].size();
+        for (int i = 0; i < graphSize; i++) {
+            if (!used[edges[vertInd][i]]) _topSort(sorted, used, edges[vertInd][i]);
+        }
+
+        sorted.push_back(vertInd);
+    }
+
+    void doTopSort() {
+        size_t N = edges.size();
+
+        std::vector<bool> used = std::vector<bool>(N, false);
+
+        for (int i = 0; i < N; i++) {
+            if (!used[i]) _topSort(sorted_vertexes, used, i);
+        }
+    }
+
+    void _strongCompDFS(std::vector<int>& components, std::vector<bool>& used, const int vert_ind) {
+        used[vert_ind] = true;
+        components.push_back(vert_ind);
+
+        size_t graph_size = edges_transposed[vert_ind].size();
+        for (size_t i = 0; i < graph_size; i++) {
+            if (!used[edges_transposed[vert_ind][i]]) _strongCompDFS(components, used, edges_transposed[vert_ind][i]);
+        }
+    }
+
+    void findStrongComponents() {
+        size_t N = edges.size();
+        int component_count  = 0;
+
+        std::vector<bool> used = std::vector(N, false);
+
+        for (int i = 0; i < N; i++) {
+            int vert_id = sorted_vertexes[N - i - 1];
+            if (!used[vert_id]) {
+                strong_components.push_back(std::vector<int>());
+
+                _strongCompDFS(strong_components[component_count], used, vert_id);
+                component_count++;
+            }
+        }
+    }
+
+    void calculateAndPrintStrongComponents() {
+        doTopSort();
+        findStrongComponents();
+
+        size_t component_cnt = strong_components.size();
+
+        std::cout << component_cnt << '\n';
+
+        for (int i = 0; i < edges.size(); i++) {
+            for (size_t j = 0; j < component_cnt; j++) {
+                for (size_t k = 0; k < strong_components[j].size(); k++) {
+                    if (strong_components[j][k] == i) std::cout << j + 1 << ' ';
+                }
+            }
+        }
+
+        std::cout << '\n';
+    }
+};
+
 //-------------------------------------------------------------------------
 
-std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> readArguments();
-
-void             topSort      (std::vector<int>& sorted, const std::vector<std::vector<int>>& graph, std::vector<bool>& used, const int vertInd);
-std::vector<int> topSortDriver(const std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> graphs);
-
-void                          dfs      (std::vector<int>& components, const std::vector<std::vector<int>>& graph, std::vector<bool>& used, const int vertInd);
-std::vector<std::vector<int>> dfsDriver(const std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>>& graphs, const std::vector<int>& sorted);
-
-void printAnswer(const std::vector<std::vector<int>>& components, const size_t N);
+Graph readArgumentsAndCreateGraph();
 
 //-------------------------------------------------------------------------
 
-std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> readArguments() {
+Graph readArgumentsAndCreateGraph() {
     int N = 0, M = 0;
     std::cin >> N >> M;
 
-    std::vector<std::vector<int>> graph  = std::vector(N, std::vector<int>());
-    std::vector<std::vector<int>> graphT = std::vector(N, std::vector<int>());
+    Graph graph(N);
 
     for (int i = 0; i < M; i++) {
         int p1 = 0, p2 = 0;
@@ -28,99 +105,17 @@ std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> readArgu
 
         p1--; p2--;
 
-        graph [p1].push_back(p2);
-        graphT[p2].push_back(p1);
+        graph.addEdge(p1, p2);
     }
 
-    return std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>>(graph, graphT);
-}
-
-//-------------------------------------------------------------------------
-
-void topSort(std::vector<int>& sorted, const std::vector<std::vector<int>>& graph, std::vector<bool>& used, const int vertInd) {
-    used[vertInd] = true;
-
-    size_t graphSize = graph[vertInd].size();
-    for (int i = 0; i < graphSize; i++) {
-        if (!used[graph[vertInd][i]]) topSort(sorted, graph, used, graph[vertInd][i]);
-    }
-
-    sorted.push_back(vertInd);
-}
-
-std::vector<int> topSortDriver(const std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> graphs) {
-    size_t N = graphs.first.size();
-
-    std::vector<bool> used   = std::vector<bool>(N, false);
-    std::vector<int>  sorted = std::vector<int>();
-
-    for (int i = 0; i < N; i++) {
-        if (!used[i]) topSort(sorted, graphs.first, used, i);
-    }
-
-    return sorted;
-}
-
-//-------------------------------------------------------------------------
-
-void dfs(std::vector<int>& components, const std::vector<std::vector<int>>& graph, std::vector<bool>& used, const int vertInd) {
-    used[vertInd] = true;
-    components.push_back(vertInd);
-
-    size_t graphSize = graph[vertInd].size();
-    for (size_t i = 0; i < graphSize; i++) {
-        if (!used[graph[vertInd][i]]) dfs(components, graph, used, graph[vertInd][i]);
-    }
-
-}
-
-std::vector<std::vector<int>> dfsDriver(const std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>>& graphs, const std::vector<int>& sorted) {
-    size_t N = graphs.first.size();
-
-    std::vector<bool> used = std::vector(N, false);
-
-    int componentCount  = 0;
-    std::vector<std::vector<int>> components = std::vector<std::vector<int>>();
-
-    for (int i = 0; i < N; i++) {
-        int vertId = sorted[N - i - 1];
-        if (!used[vertId]) {
-            components.push_back(std::vector<int>());
-
-            dfs(components[componentCount], graphs.second, used, vertId);
-            componentCount++;
-        }
-    }
-
-    return components;
-}
-
-//-------------------------------------------------------------------------
-
-void printAnswer(const std::vector<std::vector<int>>& components, const size_t N) {
-    size_t componentCnt = components.size();
-
-    std::cout << componentCnt << '\n';
-
-    for (int i = 0; i < N; i++) {
-        for (size_t j = 0; j < componentCnt; j++) {
-            for (size_t k = 0; k < components[j].size(); k++) {
-                if (components[j][k] == i) std::cout << j + 1 << ' ';
-            }
-        }
-    }
-
-    std::cout << '\n';
+    return graph;
 }
 
 //-------------------------------------------------------------------------
 
 int main() {
-    std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> graphs = readArguments();
-    std::vector<int> sorted = topSortDriver(graphs);
-    std::vector<std::vector<int>> components = dfsDriver(graphs, sorted);
-
-    printAnswer(components, graphs.first.size());
+    Graph graph = readArgumentsAndCreateGraph();
+    graph.calculateAndPrintStrongComponents();
 
     return 0;
 }
