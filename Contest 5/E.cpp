@@ -19,37 +19,6 @@ struct GraphVertex {
 };
 
 class Graph {
-private:
-    int timeCnt;
-
-    std::vector<std::vector<Edge>> nonOrientedEdges;
-    std::vector<GraphTime>         time;
-    std::vector<bool>              used;
-
-    void bridgeDFS(const GraphVertex curPoint, std::vector<int>& bridges) {
-        used[curPoint.vert] = true;
-        time[curPoint.vert].in = time[curPoint.vert].out = timeCnt++;
-
-        size_t pathCnt = nonOrientedEdges[curPoint.vert].size();
-        for (size_t i = 0; i < pathCnt; i++) {
-            int edgeEnd = nonOrientedEdges[curPoint.vert][i].to;
-
-            if (edgeEnd == curPoint.parent) continue;  // back edge
-
-            if (used[edgeEnd]) time[curPoint.vert].out 
-                                    = std::min(time[curPoint.vert].out, time[edgeEnd].in);
-            else {
-                bridgeDFS({edgeEnd, curPoint.vert}, bridges);
-                time[curPoint.vert].out 
-                                    = std::min(time[curPoint.vert].out, time[edgeEnd].out);
-
-                if (time[edgeEnd].out > time[curPoint.vert].in) {
-                    bridges.push_back(nonOrientedEdges[curPoint.vert][i].number);
-                }
-            }
-        }
-    }
-
 public:
     explicit Graph(int N) : timeCnt(0) {
         nonOrientedEdges.resize(N);
@@ -60,28 +29,61 @@ public:
         nonOrientedEdges[v2].push_back({v2, v1, number});
     }
 
-    std::vector<int> findBridges() {
-        std::vector<int> bridges;
+public:
+    int timeCnt;
 
-        size_t vertexCnt = nonOrientedEdges.size();
-
-        used.resize(vertexCnt, false);
-        time.resize(vertexCnt);
-
-        for (int i = 0; i < vertexCnt; i++) {
-            if (!used[i]) bridgeDFS({i, -1}, bridges);
-        }
-
-        return bridges;
-    }
+    std::vector<std::vector<Edge>> nonOrientedEdges;
+    std::vector<GraphTime>         time;
+    std::vector<bool>              used;
 };
 
 //--------------------------------------------------------------------
 
-Graph readArguments     (std::istream& stream);
-void  printBridgesSorted(std::vector<int>& bridges);
+std::vector<int> findBridges       (Graph& graph);
+void             _findBridgesDFS   (Graph& graph, const GraphVertex curPoint, std::vector<int>& bridges);
+Graph            readArguments     (std::istream& stream);
+void             printBridgesSorted(std::vector<int>& bridges);
                         
 //--------------------------------------------------------------------
+
+std::vector<int> findBridges(Graph& graph) {
+    std::vector<int> bridges;
+
+    size_t vertexCnt = graph.nonOrientedEdges.size();
+
+    graph.used.resize(vertexCnt, false);
+    graph.time.resize(vertexCnt);
+
+    for (int i = 0; i < vertexCnt; i++) {
+        if (!graph.used[i]) _findBridgesDFS(graph, {i, -1}, bridges);
+    }
+
+    return bridges;
+}
+
+void _findBridgesDFS(Graph& graph, const GraphVertex curPoint, std::vector<int>& bridges) {
+    graph.used[curPoint.vert] = true;
+    graph.time[curPoint.vert].in = graph.time[curPoint.vert].out = graph.timeCnt++;
+
+    size_t pathCnt = graph.nonOrientedEdges[curPoint.vert].size();
+    for (size_t i = 0; i < pathCnt; i++) {
+        int edgeEnd = graph.nonOrientedEdges[curPoint.vert][i].to;
+
+        if (edgeEnd == curPoint.parent) continue;  // back edge
+
+        if (graph.used[edgeEnd]) graph.time[curPoint.vert].out 
+                                = std::min(graph.time[curPoint.vert].out, graph.time[edgeEnd].in);
+        else {
+            _findBridgesDFS(graph, {edgeEnd, curPoint.vert}, bridges);
+            graph.time[curPoint.vert].out 
+                                = std::min(graph.time[curPoint.vert].out, graph.time[edgeEnd].out);
+
+            if (graph.time[edgeEnd].out > graph.time[curPoint.vert].in) {
+                bridges.push_back(graph.nonOrientedEdges[curPoint.vert][i].number);
+            }
+        }
+    }
+}
 
 Graph readArguments(std::istream& stream) {
     int N = 0, M = 0;
@@ -115,7 +117,7 @@ void printBridgesSorted(std::vector<int>& bridges) {
 int main() {
     Graph graph = readArguments(std::cin);
 
-    std::vector<int> bridges = graph.findBridges();
+    std::vector<int> bridges = findBridges(graph);
     printBridgesSorted(bridges);
 
     return 0;
