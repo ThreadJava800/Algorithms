@@ -20,6 +20,12 @@ struct GraphVertex {
 
 class Graph {
 public:
+    int timeCnt;
+
+    std::vector<std::vector<Edge>> nonOrientedEdges;
+    std::vector<GraphTime>         time;
+    std::vector<bool>              used;
+
     explicit Graph(int N) : timeCnt(0) {
         nonOrientedEdges.resize(N);
     }
@@ -28,13 +34,6 @@ public:
         nonOrientedEdges[v1].push_back({v1, v2, number});
         nonOrientedEdges[v2].push_back({v2, v1, number});
     }
-
-public:
-    int timeCnt;
-
-    std::vector<std::vector<Edge>> nonOrientedEdges;
-    std::vector<GraphTime>         time;
-    std::vector<bool>              used;
 };
 
 //--------------------------------------------------------------------
