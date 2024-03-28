@@ -22,28 +22,35 @@ struct SuffixNode {
 class SuffixAutomation {
 public:
     SuffixAutomation(std::string_view str)
-      :  last_state (0) {
-        nodes.emplace_back();
+      :  last_state (0),
+         size       (0) {
+        states.resize(str.size() * 2 + 1);
+        states[0].len = 0; states[0].link = -1;
+        size++;
 
-        for (auto symbol : str)
-            addSymbol(symbol);
+        for (auto c : str)
+            addSymbol(c);
     }
 
     size_t getSubstrPaths() {
-        std::vector<int>  d(nodes.size(), 0);
-        std::vector<bool> w(nodes.size(), false);
         size_t result = 0;
 
-        d[0] = 1; w[0] = true;
+        for (int i = 1; i < states.size(); i++) {
+            std::vector<int>  d(states.size(), 0);
+            std::vector<bool> w(states.size(), false);
+            d[0] = 1; w[0] = true;
 
-        return getSubstrPathsDP(last_state, d, w);
+            result += getSubstrPathsDP(i, d, w);
+        }
+
+        return result;
     }
 
     void traverseAutomaton() {
         std::cout << "Traversing Suffix Automaton:\n";
-        for (int i = 0; i < nodes.size(); ++i) {
-            std::cout << "State " << i << ", Length: " << nodes[i].len << ", Suffix Link: " << nodes[i].link << "\n";
-            for (const auto& transition : nodes[i].son) {
+        for (int i = 0; i < states.size(); ++i) {
+            std::cout << "State " << i << ", Length: " << states[i].len << ", Suffix Link: " << states[i].link << "\n";
+            for (const auto& transition : states[i].son) {
                 std::cout << " Transition on '" << transition.first << "' to State " << transition.second << "\n";
             }
         }
@@ -56,12 +63,8 @@ private:
         size_t result = 0;
         w[current] = true;
 
-
-        auto keys_it = std::views::keys(nodes[current].son);
-        std::vector<char> keys(keys_it.begin(), keys_it.end());
-
-        for (auto symbol : keys) {
-            result += getSubstrPathsDP(nodes[current].son[symbol], d, w);
+        for (const auto& [key, value] : states[current].son) {
+            result += getSubstrPathsDP(value, d, w);
         }
 
         d[current] = result;
@@ -69,44 +72,45 @@ private:
     }
 
     void addSymbol(char symbol) {
-        SuffixNode new_node(nodes[last_state].len + 1);
+        int current = size++;
 
-        int cur_state = last_state;
-        while (cur_state != -1 
-            && nodes[cur_state].son.find(symbol) == nodes[cur_state].son.end()) {
-            
-            nodes[cur_state].son[symbol] = nodes.size();
-            cur_state = nodes[cur_state].link;
+        states[current].len = states[last_state].len + 1;
+
+        int prev = last_state;
+        for (; prev != -1 && !states[prev].son.count(symbol); prev = states[prev].link) {
+            states[prev].son[symbol] = current;
         }
-        
 
-        if (cur_state == -1) new_node.link = 0;
+        if (prev == -1) states[current].link = 0;
         else {
-            int next_state = nodes[cur_state].son[symbol];
+            int next_state = states[prev].son[symbol];
 
-            if (nodes[cur_state].len + 1 == nodes[next_state].len) {
-                new_node.link = next_state;
-            } else {
-                SuffixNode next_copy = nodes[next_state];
-                next_copy.len = nodes[cur_state].len + 1;
-                nodes.push_back(next_copy);
+            if (states[prev].len + 1 == states[next_state].len)
+                states[current].link = next_state;
+            else {
+                int copy = size++;
 
-                while (cur_state != -1 && nodes[cur_state].son[symbol] == next_state) {
-                    nodes[cur_state].son[symbol] = nodes.size() - 1;
-                    cur_state = nodes[cur_state].link;
+                // states[copy] = SuffixNode(states[prev].len + 1, states[next_state].link);
+                states[copy].len  = states[prev].len + 1;
+                states[copy].link = states[next_state].link;
+                states[copy].son  = states[next_state].son;
+
+                while (prev != -1 && states[prev].son[symbol] == next_state) {
+                    states[prev].son[symbol] = copy;
+                    prev = states[prev].link;
                 }
                 
-                new_node.link = nodes.size() - 1;
-                nodes[next_state].link = new_node.link;
+                states[next_state].link = copy;
+                states[current]   .link = copy;
             }
         }
 
-        last_state = nodes.size();
-        nodes.push_back(new_node);
+        last_state = current;
     }
 
-    std::vector<SuffixNode> nodes;
+    std::vector<SuffixNode> states;
     int                     last_state;
+    int                     size;
 };
 
 int main() {
@@ -118,7 +122,7 @@ int main() {
     std::cin >> str;
     SuffixAutomation suf_automat(str);
 
-    suf_automat.traverseAutomaton();
+    // suf_automat.traverseAutomaton();
     std::cout << suf_automat.getSubstrPaths() << '\n';
 
     return 0;
