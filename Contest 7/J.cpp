@@ -94,43 +94,52 @@ public:
         return node;
     }
 
-    bool checkLeaves() {
-        for (auto arr : cycles) {
-            for (auto val : arr) {
-                std::cout << val << ' ';
-            }
-            std::cout << '\n';
-        }
+    bool checkLeaves(int current) {
+        nodes[current]->color = GREY;
 
-        return true;
+        for (char path : {'0', '1'}) {
+            int child = go(current, path);
+
+            if (nodes[child]->color == WHITE) 
+                checkLeaves(child);
+            if (nodes[child]->color == GREY) {
+                if (nodes[child]->is_leaf) {
+                    return true;
+                }
+                return false;
+            }
+        }
+        nodes[current]->color = BLACK;
+
+        return false;
     }
 
-    void checkIfInf(int cur_node, int parent, std::vector<int>& parents) {
-        if (nodes[cur_node]->color == BLACK) return;
-        if (nodes[cur_cnt]->color == GREY) {
-            std::vector<int> temp;
-            int cur = parent;
+    // void checkIfInf(int cur_node, int parent, std::vector<int>& parents) {
+    //     if (nodes[cur_node]->color == BLACK) return;
+    //     if (nodes[cur_cnt]->color == GREY) {
+    //         std::vector<int> temp;
+    //         int cur = parent;
 
-            temp.push_back(cur);
+    //         temp.push_back(cur);
 
-            while (cur != cur_node) {
-                cur = parents[cur];
-                temp.push_back(cur);
-            }
-            cycles.push_back(temp);
-        } else {
-            parents[cur_node] = parent;
-            nodes[cur_cnt]->color = GREY;
+    //         while (cur != cur_node) {
+    //             cur = parents[cur];
+    //             temp.push_back(cur);
+    //         }
+    //         cycles.push_back(temp);
+    //     } else {
+    //         parents[cur_node] = parent;
+    //         nodes[cur_cnt]->color = GREY;
 
-            for (auto c : {'0', '1'}) {
-                int child = go(cur_node, c);
-                if (child == parents[cur_node]) continue;
-                checkIfInf(child, cur_node, parents);
-            }
+    //         for (auto c : {'0', '1'}) {
+    //             int child = go(cur_node, c);
+    //             if (child == parents[cur_node]) continue;
+    //             checkIfInf(child, cur_node, parents);
+    //         }
 
-            nodes[cur_cnt]->color = BLACK;
-        }
-    }
+    //         nodes[cur_cnt]->color = BLACK;
+    //     }
+    // }
 
     size_t nodeCnt() const {
         return nodes.size();
@@ -138,7 +147,7 @@ public:
 
 private:
     std::vector<std::shared_ptr<Node>> nodes;
-    std::vector<std::vector<int>> cycles;
+    // std::vector<std::vector<int>> cycles;
     size_t cur_cnt;
 };
 
@@ -154,10 +163,13 @@ int main() {
     }
 
     std::vector<int> parents(aho.nodeCnt());
-    aho.checkIfInf(1, 0, parents);
-    aho.checkLeaves();
+    // aho.checkIfInf(1, 0, parents);
+    if (!aho.checkLeaves(0)) {
+        std::cout << "YES\n";
+        return 0;
+    }
 
-    // std::cout << "NIE\n";
+    std::cout << "NIE\n";
 
     return 0;
 }

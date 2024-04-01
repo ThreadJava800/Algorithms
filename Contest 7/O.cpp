@@ -24,7 +24,7 @@ public:
     SuffixAutomation(std::string_view str)
       :  last_state (0),
          size       (0) {
-        states.resize(str.size() * 2 + 1);
+        states.resize(str.size() * 2 + 1, SuffixNode(0, -1));
         states[0].len = 0; states[0].link = -1;
         size++;
 
@@ -34,13 +34,8 @@ public:
 
     size_t getSubstrPaths() {
         size_t result = 0;
-
-        for (int i = 1; i < states.size(); i++) {
-            std::vector<int>  d(states.size(), 0);
-            std::vector<bool> w(states.size(), false);
-            d[0] = 1; w[0] = true;
-
-            result += getSubstrPathsDP(i, d, w);
+        for (int i = 1; i < size; i++) {
+            result += states[i].len - states[states[i].link].len;
         }
 
         return result;
@@ -77,12 +72,12 @@ private:
         states[current].len = states[last_state].len + 1;
 
         int prev = last_state;
-        for (; prev != -1 && !states[prev].son.count(symbol); prev = states[prev].link) {
+        for (; prev >= 0 && states[prev].son.find(symbol) == states[prev].son.end(); prev = states[prev].link) {
             states[prev].son[symbol] = current;
         }
 
         if (prev == -1) states[current].link = 0;
-        else {
+        else  {
             int next_state = states[prev].son[symbol];
 
             if (states[prev].len + 1 == states[next_state].len)
@@ -95,7 +90,7 @@ private:
                 states[copy].link = states[next_state].link;
                 states[copy].son  = states[next_state].son;
 
-                while (prev != -1 && states[prev].son[symbol] == next_state) {
+                while (prev >= 0 && states[prev].son[symbol] == next_state) {
                     states[prev].son[symbol] = copy;
                     prev = states[prev].link;
                 }
