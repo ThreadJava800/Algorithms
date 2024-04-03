@@ -11,126 +11,194 @@
 const size_t alphabet_len = 256;
 
 struct AhoNode {
-    AhoNode* sons       [alphabet_len];
-    AhoNode* transitions[alphabet_len];
 
-    AhoNode* parent         = nullptr;
-    AhoNode* suf_link       = nullptr;
-    AhoNode* short_suf_link = nullptr;
-
-    char edge    = '\0';
-    bool is_leaf = false;
-
-    std::vector<int> leaves;
-
-    AhoNode() {
-        std::memset(sons, 0, sizeof(sons));
-        std::memset(sons, 0, sizeof(transitions));
+    AhoNode()
+      : children (),
+        edge     ('\0'),
+        batya    (-1),
+        suf_link (-1),
+        term_link(-1),
+        word_id  (-1),
+        is_leaf  (false) {
     }
+
+    AhoNode(const int _suf_link, const int _parent, const char _edge)
+      : children (),
+        edge     (_edge),
+        batya    (_parent),
+        suf_link (_suf_link),
+        term_link(-1),
+        word_id  (-1),
+        is_leaf  (false) {
+    }
+
+public:
+    std::map<char, int> children;
+    char                edge;
+
+    int                 batya;
+    int                 suf_link;
+    int                 term_link;
+    int                 word_id;
+    bool                is_leaf;
 };
 
 class Aho_Corasick {
 public:
+
     Aho_Corasick()
-      : root (new AhoNode) {}
+      : root (0) {
+        trie.push_back(new AhoNode);
+    }
 
-    void addString(const std::string_view str, const int pattern_num) {
-        AhoNode* cur = root;
+    void findMaskOccur(std::string_view mask_str, char mask_symb, std::string_view substr, std::vector<int>& result) {
+        std::vector<size_t> start_positions;
+        std::vector<size_t> substr_occurs(substr.size(), 0);
 
-        for (size_t i = 0; i < str.size(); i++) {
-            const char edge = str[i];
-            if (!cur->sons[edge]) {
-                cur->sons[edge] = new AhoNode;
+        std::cout << "BEFORE ADD\n";
+        splitToSubstrings(mask_str, mask_symb, start_positions);
+        std::cout << "BEFORE INIT\n";
+        init();
+        std::cout << "AFTER INIT\n";
 
-                cur->sons[edge]->suf_link       = nullptr;
-                cur->sons[edge]->short_suf_link = nullptr;
-                cur->sons[edge]->parent         = cur;
-                cur->sons[edge]->edge           = edge;
-                cur->sons[edge]->is_leaf        = false;
+        // std::cout << substrings.size() << '\n';
+        // int cnt = 0;
+        // for (auto val : substrings) {
+        //     std::cout << val << start_positions[cnt++] << '\n';
+        // }
+
+        findOccur(substr, start_positions, substr_occurs);
+
+        for (size_t i = 0; i < substr_occurs.size(); i++) {
+            std::cout << i << ' ' << substr_occurs[i] << '\n';
+            // std::cout << substrings.size() 
+            if (substr_occurs[i] == substrings.size()) {
+                result.push_back(i);
             }
-
-            cur = cur->sons[edge];
-        }
-
-        cur->is_leaf = true;
-        cur->leaves.push_back(pattern_num);
-    }
-
-    AhoNode* getSufLink(AhoNode* vert) {
-        if (!vert->suf_link) {
-            if (vert->parent == root || vert == root)
-                vert->suf_link = root;
-            else
-                vert->suf_link = getLink(getSufLink(vert->parent), vert->edge);
-        }
-
-        return vert->suf_link;
-    }
-
-    AhoNode* getShortLink(AhoNode* vert) {
-        if (!vert->short_suf_link) {
-            AhoNode* suf_link = getSufLink(vert);
-
-            if (suf_link->is_leaf)
-                vert->short_suf_link = suf_link;
-            else if (suf_link == root)
-                vert->short_suf_link = root;
-            else
-                vert->short_suf_link = getShortLink(suf_link);
-        }
-
-        return vert->short_suf_link;
-    }
-
-    AhoNode* getLink(AhoNode* vert, const char edge) {
-        if (!vert->transitions[edge]) {
-            if (vert->sons[edge])
-                vert->transitions[edge] = vert->sons[edge];
-            else if (vert == root)
-                vert->transitions[edge] = root;
-            else
-                vert->transitions[edge] = getLink(getSufLink(vert), edge);
-        }
-
-        return vert->transitions[edge];
-    }
-
-    void findOccur(const std::string_view str, std::vector<int>& occurs) {
-        AhoNode* cur = root;
-
-        for (size_t i = 0; i < str.size(); i++) {
-            const char edge = str[i];
-            cur = getLink(cur, edge);
-
-            if (cur->is_leaf)
-                occurs.push_back(i);
-
-            // while (cur != root) {
-            //     occurs.push_back(i);
-            //     cur = getShortLink(cur);
-            // }
-            
         }
     }
 
 private:
-    AhoNode* root;
+
+    void findOccur(const std::string_view str, std::vector<size_t>& start_positions, std::vector<size_t>& substr_occurs) {
+        
+    }
+
+    void splitToSubstrings(std::string_view mask_str, char mask_symb, std::vector<size_t>& start_positions) {
+        std::string add_str;
+        bool is_start = true;
+
+        size_t str_cnt = 0;
+
+        for (size_t i = 0; i < mask_str.size(); i++) {
+            if (mask_str[i] == mask_symb) {
+                if (add_str.size() != 0) {
+                    addStr(str_cnt++, add_str);
+                    substrings.push_back(add_str);
+                }
+
+                add_str.clear();
+                is_start = true;
+            } else {
+                if (is_start) {
+                    start_positions.push_back(i);
+                    is_start = false;
+                }
+                add_str += mask_str[i];
+            }
+        }
+
+        if (add_str.size() != 0) {
+            addStr(str_cnt++, add_str);
+            substrings.push_back(add_str);
+        }
+    }
+
+    void go(int vert) {
+        if (vert == root) {
+            trie[vert]->suf_link  = root;
+            trie[vert]->term_link = root;
+        } else if (trie[vert]->batya == root) {
+            trie[vert]->suf_link = root;
+
+            if (trie[vert]->is_leaf)
+                trie[vert]->term_link = vert;
+            else
+                trie[vert]->term_link = trie[trie[vert]->suf_link]->term_link;
+        } else {
+            int  new_vert = trie[trie[vert]->batya]->suf_link;
+            char new_edge = trie[vert]->edge;
+
+            while (1) {
+                if (trie[new_vert]->children.count(new_edge) > 0) {
+                    trie[vert]->suf_link = trie[new_vert]->children[new_edge];
+                    break;
+                }
+
+                if (new_vert == root) {
+                    trie[vert]->suf_link = root;
+                    break;
+                }
+
+                new_vert = trie[new_vert]->suf_link;
+            }
+
+            if (trie[vert]->is_leaf)
+                trie[vert]->term_link = vert;
+            else 
+                trie[vert]->term_link = trie[trie[vert]->suf_link]->term_link;
+        }
+    }
+
+    void init() {
+        std::queue<int> bfs_queue;
+        bfs_queue.push(root);
+
+        while (!bfs_queue.empty()) {
+            int cur_vert = bfs_queue.front(); bfs_queue.pop();
+            go(cur_vert);
+
+            for (const auto& [key, val] : trie[cur_vert]->children) {
+                bfs_queue.push(val);
+            }
+        }
+        
+    }
+
+    void addStr(const size_t index, const std::string& str) {
+        int cur = root;
+
+        for (const auto symbol : str) {
+            if (trie[cur]->children.count(symbol) == 0) {
+                trie.push_back(new AhoNode(-1, cur, symbol));
+                trie[trie.size() - 1]->children[symbol] = trie.size() - 1;
+            }
+
+            cur = trie[cur]->children[symbol];
+        }
+
+        trie[cur]->is_leaf = true;
+        trie[cur]->word_id = index;
+        substrings.push_back(str);
+    }
+
+private:
+    std::vector<std::string> substrings;
+
+    int root;
+    // int sz;
+    std::vector<AhoNode*> trie;
+    std::vector<int>      word_lens;
 };
 
 int main() {
-    // std::string substr, mask_str;
-    // std::cin >> substr >> mask_str;
+    std::string substr, mask_str;
+    std::cin >> substr >> mask_str;
 
     Aho_Corasick aho;
     std::vector<int> occurences;
-    aho.addString("he", 0);
-    aho.addString("she", 1);
-    aho.addString("hers", 2);
-    aho.addString("his", 3);
-    // aho.addString("he");
-    // aho.findMaskOccur(substr,  '?', mask_str, occurences);
+    aho.findMaskOccur(substr,  '?', mask_str, occurences);
 
-    aho.findOccur("ahishers", occurences);
     for (auto val : occurences) {
         std::cout << val << ' ';
     }
