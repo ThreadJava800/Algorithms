@@ -19,7 +19,6 @@ public:
         size_t ans = 0;
         for (int i = 0; i < str.length(); i++) {
             ans += (odd_palindromes[i] + even_palindromes[i]);
-            // std::cout << i << ' ' << ans << ' ' << odd_palindromes[i] << ' ' << even_palindromes[i] << '\n';
         }
 
         return ans;
