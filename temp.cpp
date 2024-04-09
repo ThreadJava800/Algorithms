@@ -14,7 +14,8 @@ struct AhoNode {
 public:
 
     AhoNode(int _parent = -1, char _edge = '\0')
-      : children    (alphabet_len, -1),
+      : str_ind     (-1),
+        children    (alphabet_len, -1),
         transitions (alphabet_len, -1),
         is_leaf     (false),
         parent      (_parent),
@@ -23,7 +24,7 @@ public:
       }
 
 public:
-    std::vector<int> str_indexes;
+    int str_ind;;
     std::vector<int> children;
     std::vector<int> transitions;
 
@@ -31,8 +32,6 @@ public:
     int  parent;
     char edge;
     int  suf_link;
-
-    int  color = 0;
 };
 
 class Aho_Corasick {
@@ -66,7 +65,7 @@ public:
         }
     }
 
-public:
+private:
 
     void findOccur(const std::string_view str, std::vector<size_t>& start_positions, std::vector<size_t>& substr_occurs) {
         int cur = 0;
@@ -74,33 +73,31 @@ public:
         for (size_t i = 0; i < str.size(); i++) {
             cur = go(cur, str[i]);
 
-            // if (nodes[cur]->is_leaf) {
-            //     if (i - start_positions[j] - substrings[j].size() + 1 < str.size())
-            //         substr_occurs[i - start_positions[j] - substrings[j].size() + 1]++;
-            // }
-
-            for (const auto j : nodes[cur]->str_indexes) {
-                // std::cout << j << ' ';
-                if (nodes[cur]->is_leaf) {
-                    if (i - start_positions[j] - substrings[j].size() + 1 < str.size())
-                        substr_occurs[i - start_positions[j] - substrings[j].size() + 1]++;
-                }
+            if (nodes[cur]->is_leaf) {
+                int j = nodes[cur]->str_ind;
+                if (i - start_positions[j] - substrings[j].size() + 1 < str.size())
+                    substr_occurs[i - start_positions[j] - substrings[j].size() + 1]++;
             }
 
             int tmp = link(cur);
             int cnt = 0;
             while (tmp != 0) {
                 // fprintf(stderr, "%d\n", tmp);
-                for (const auto j : nodes[tmp]->str_indexes) {
-                    // std::cout << j << ' ';
-                    // if (nodes[cur]->is_leaf) {
-                        if (i - start_positions[j] - substrings[j].size() + 1 < str.size())
-                            substr_occurs[i - start_positions[j] - substrings[j].size() + 1]++;
-                    // }
-                }
+                int j = nodes[tmp]->str_ind;
+                if (i - start_positions[j] - substrings[j].size() + 1 < str.size())
+                    substr_occurs[i - start_positions[j] - substrings[j].size() + 1]++;
 
                 tmp = link(tmp);
             }
+            
+
+            // for (const auto j : nodes[cur]->str_indexes) {
+            //     // std::cout << j << ' ';
+            //     if (nodes[cur]->is_leaf) {
+            //         if (i - start_positions[j] - substrings[j].size() + 1 < str.size())
+            //             substr_occurs[i - start_positions[j] - substrings[j].size() + 1]++;
+            //     }
+            // }
             // std::cout << '\n';
         }
     }
@@ -136,8 +133,6 @@ public:
     }
 
     int go(int vert, char edge) {
-        if (vert == -1 || nodes[vert]->is_leaf) return -1;
-        
         if (nodes[vert]->transitions[edge] == -1) {
             if (nodes[vert]->children[edge] != -1) {
                 nodes[vert]->transitions[edge] = nodes[vert]->children[edge];
@@ -177,30 +172,8 @@ public:
         }
 
         nodes[cur]->is_leaf = true;
-        nodes[cur]->str_indexes.push_back(index);
+        nodes[cur]->str_ind = index;
     }
-
-    bool runDfs(int vert) {
-        nodes[vert]->color = 1;
-
-        for (const auto symbol : {'0', '1'}) {
-            int child = go(vert, symbol);
-
-            if (child == -1) continue;
-
-            if (nodes[child]->color == 0) {
-                if (runDfs(child)) return true;
-            } else if (nodes[child]->color == 1) {
-                if (nodes[child]->is_leaf) {
-                    continue;
-                }
-                return true;
-            }
-        }
-
-        nodes[vert]->color = 2;
-        return false;
-    } 
 
 private:
     std::vector<AhoNode*>    nodes;
@@ -208,22 +181,17 @@ private:
 };
 
 int main() {
+    std::string substr, mask_str;
+    std::cin >> substr >> mask_str;
+
     Aho_Corasick aho;
-    size_t N = 0;
+    std::vector<int> occurences;
+    aho.findMaskOccur(substr,  '?', mask_str, occurences);
 
-    std::cin >> N;
-
-    for (size_t i = 0; i < N; i++) {
-        std::string str_i;
-        std::cin >> str_i;
-        aho.addStr(i, str_i);
+    for (auto val : occurences) {
+        std::cout << val << ' ';
     }
-
-    if (aho.runDfs(0)) {
-        std::cout << "TAK\n";
-    } else {
-        std::cout << "NIE\n";
-    }
+    std::cout << '\n';
 
     return 0;
 }

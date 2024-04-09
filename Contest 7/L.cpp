@@ -1,125 +1,101 @@
+#include <functional>
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <queue>
-#include <cstring>
-#include <algorithm>
 
-class Node;
-
-const size_t alphabet_len = 256;
-const size_t state_cnt    = 30000;
-Node* root                = nullptr;
-
-class Aho_Corasick {
+class PalindromeCounter {
 public:
-
-    int proceedBFS(std::queue<int>& bfs_queue) {
-        while (bfs_queue.size()) {
-            int cur_state = bfs_queue.front();
-            bfs_queue.pop();
-
-            for (int symb = 0; symb < alphabet_len; symb++) {
-                if (transitions[cur_state][symb] != -1) {
-                    int fail = failure[cur_state];
-                    while (transitions[cur_state][symb] == -1) {
-                        fail = failure[fail];
-                    }
-                    
-                    fail = transitions[fail][symb];
-                    failure[transitions[cur_state][symb]] = fail;
-
-                    states[transitions[cur_state][symb]] |= states[fail];
-                    bfs_queue.push(transitions[cur_state][symb]);
-                }
-            }
-        }
-
-        return state_cnt;
+    explicit PalindromeCounter(const std::string_view _str)
+        : str(_str) {
+        odd_palindromes .resize(str.length(), 0);
+        even_palindromes.resize(str.length(), 0);
     }
 
-    int getNextState(int cur, char edge) {
-        int res = cur;
-        
-        while (transitions[res][edge] == -1) {
-            res = failure[res];
+    size_t getPalindromeCnt() {
+        countOddPalindromes ();
+        countEvenPalindromes();
+
+        size_t ans = 0;
+        for (int i = 0; i < str.length(); i++) {
+            ans += (odd_palindromes[i] + even_palindromes[i]);
+            // std::cout << i << ' ' << ans << ' ' << odd_palindromes[i] << ' ' << even_palindromes[i] << '\n';
         }
-        
-        return transitions[res][edge];
+
+        return ans;
     }
 
-    int init(std::vector<std::string>& strings) {
-        std::memset(states, 0, sizeof states);
-        std::memset(transitions, -1, sizeof transitions);
-        std::memset(failure, -1, sizeof failure);
+private:
 
-        int state_cnt = 1;
-        for (size_t i = 0; i < strings.size(); i++) {
-            std::string cur_word = strings[i];
-            int cur_state_num = 0;
+    void countOddPalindromes() {
+        int left_bound = 0, right_bound = -1;
+        int str_len = static_cast<int>(str.length());
 
-            for (size_t j = 0; j < cur_word.length(); j++) {
-                char symb = cur_word[j];
-                if (transitions[cur_state_num][symb] == -1) {
-                    transitions[cur_state_num][symb] = state_cnt;
-                    state_cnt++;
-                }
-                cur_state_num = transitions[cur_state_num][symb];
+        for (int i = 0; i < str_len; i++) {
+            int palindrome_len = 1;
+
+            if (i <= right_bound) 
+                palindrome_len = std::min(right_bound - i, odd_palindromes[left_bound + right_bound - i]) + 1;
+
+            while (
+                    (i + palindrome_len < str_len) && 
+                    (i - palindrome_len >= 0)      &&
+                    str[i + palindrome_len] == str[i - palindrome_len]
+                  ) {
+                palindrome_len++;
             }
 
-            states[cur_state_num] |= (1 << i);
-        }
+            odd_palindromes[i] = --palindrome_len;
 
-        for (int symb = 0; symb < alphabet_len; symb++) {
-            if (transitions[0][symb] == -1)
-                transitions[0][symb] = 0;
-        }
-
-        std::queue<int> bfs_queue;
-        for (int symb = 0; symb < alphabet_len; symb++) {
-            if (transitions[0][symb] != 0) {
-                failure[transitions[0][symb]] = 0;
-                bfs_queue.push(transitions[0][symb]);
+            if (i + palindrome_len > right_bound) {
+                left_bound  = i - palindrome_len;
+                right_bound = i + palindrome_len;
             }
         }
-
-        return proceedBFS(bfs_queue);
     }
 
-public:
-    int states     [state_cnt];
-    int failure    [state_cnt];
-    int transitions[state_cnt][alphabet_len];
+    void countEvenPalindromes() {
+        int left_bound = 0, right_bound = -1;
+        int str_len = static_cast<int>(str.length());
+    
+        for (int i = 0; i < str_len; i++) {
+            int palindrome_len = 1;
+
+            if (i <= right_bound) 
+                palindrome_len = std::min(right_bound - i + 1, even_palindromes[right_bound - i + left_bound + 1]) + 1;
+
+            while (
+                    (i + palindrome_len - 1 < str_len) && 
+                    (i - palindrome_len >= 0)   &&
+                    str[i + palindrome_len - 1] == str[i - palindrome_len]
+                  ) {
+                palindrome_len++;
+            }
+
+            even_palindromes[i] = --palindrome_len;
+
+            if (i + palindrome_len - 1 > right_bound) {
+                left_bound  = i - palindrome_len;
+                right_bound = i + palindrome_len - 1;
+            }
+        }
+    }
+
+private:
+    const std::string_view str;
+          std::vector<int> odd_palindromes;
+          std::vector<int> even_palindromes;
 };
 
-Aho_Corasick aho;
-std::vector<std::pair<int, int>> banned_ind;
-
-bool findOccur(std::vector<std::string>& strings, std::string& str) {
-    int cur_state = 0;
-
-    for (size_t i = 0; i < str.length(); i++) {
-        cur_state = aho.getNextState(cur_state, str[i]);
-        if (aho.states[cur_state] == 0) continue;
-
-        for (size_t j = 0; j < strings.size(); j++) {
-            if (aho.states[cur_state] & (1 << j)) {
-                // std::cout << str << ' ' << << '\n';
-                // std::cout << "OUT " << i - strings[j].size() + 1 << ' ' << i << '\n';
-                if (std::find(banned_ind.begin(), banned_ind.end(), std::pair<int, int>(i - strings[j].size() +1, i)) != banned_ind.end()) {
-                    continue;
-                }
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 int main() {
-    
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(0); std::cout.tie(0);
+
+    std::string str;
+    std::cin >> str;
+
+    PalindromeCounter pal_cnt(str);
+    std::cout << pal_cnt.getPalindromeCnt() << '\n';
 
     return 0;
 }

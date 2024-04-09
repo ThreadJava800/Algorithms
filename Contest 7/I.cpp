@@ -47,7 +47,7 @@ public:
         nodes[cur_node]->is_leaf = true;
     }
 
-    int getSufLink(int cur_node) {
+    int getSufLink(const int cur_node) {
         if (nodes[cur_node]->suffix_link == -1) {
             if (cur_node == 0 || nodes[cur_node]->parent == 0) {
                 nodes[cur_node]->suffix_link = 0;
@@ -59,7 +59,7 @@ public:
         return nodes[cur_node]->suffix_link;
     }
 
-    int go(int cur_node, char path) {
+    int go(const int cur_node, const char path) {
         if (nodes[cur_node]->transitions[path] == -1) {
             if (nodes[cur_node]->children[path] != -1) {
                 nodes[cur_node]->transitions[path] = nodes[cur_node]->children[path];
