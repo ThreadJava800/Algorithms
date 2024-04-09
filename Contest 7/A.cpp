@@ -2,13 +2,11 @@
 #include <string>
 #include <vector>
 
-size_t* calculatePrefixFun(const std::string& str);
-void    searchStrEntries  (const std::string& str_s, const std::string& str_p, std::vector<size_t>& indexes);
+void calculatePrefixFun (const std::string& str, std::vector<size_t>& pref_fun);
+void    searchStrEntries(const std::string& str_s, const std::string& str_p, std::vector<size_t>& indexes);
 
-size_t* calculatePrefixFun(const std::string& str) {
+void calculatePrefixFun(const std::string& str, std::vector<size_t>& pref_fun) {
     int str_len = static_cast<int>(str.length());
-
-    size_t* pref_fun = new size_t[str_len]();
 
     int j = 0;
     for (int i = 1; i < str_len; i++) {
@@ -18,21 +16,19 @@ size_t* calculatePrefixFun(const std::string& str) {
         if (str[i] == str[j]) j++;
         pref_fun[i] = j;
     }
-
-    return pref_fun;
 }
 
 void searchStrEntries(const std::string& str_s, const std::string& str_p, std::vector<size_t>& indexes) {
     size_t s_len = str_s.length(), p_len = str_p.length();
 
     std::string concatenated_strings = str_p + "#" + str_s;
-    size_t* pref_func = calculatePrefixFun(concatenated_strings);
+    std::vector<size_t> pref_func(concatenated_strings.size(), 0);
+
+    calculatePrefixFun(concatenated_strings, pref_func);
 
     for (size_t i = 0; i < s_len; i++) {
         if (pref_func[p_len + i + 1] == p_len) indexes.push_back(i - p_len + 1);
     }
-
-    delete[] pref_func;
 }
 
 int main() {
