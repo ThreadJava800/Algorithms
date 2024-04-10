@@ -1,139 +1,225 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <memory>
 #include <vector>
 #include <queue>
+#include <map>
 #include <cstring>
 #include <algorithm>
 
 const size_t alphabet_len = 256;
-const size_t max_node_cnt = 256;
 
 struct AhoNode {
-    AhoNode(int _par = -1, char _edge = 0) 
-        : parent(_par),
-          edge  (_edge) {
-        std::fill(std::begin(sons), std::end(sons), -1);
-        std::fill(std::begin(transmissions), std::end(transmissions), -1);
-    }
+public:
 
+    AhoNode(int _parent = -1, char _edge = '\0')
+      : children    (alphabet_len, -1),
+        transitions (alphabet_len, -1),
+        is_leaf     (false),
+        parent      (_parent),
+        edge        (_edge),
+        suf_link    (-1) {
+      }
 
-    int sons         [alphabet_len];
-    int transmissions[alphabet_len];
-    
-    int  parent;
+public:
+    std::vector<int> str_indexes;
+    std::vector<int> children;
+    std::vector<int> transitions;
+
     bool is_leaf;
-    int  suffix_link;
+    int  parent;
     char edge;
+    int  suf_link;
 
-    int color = 0; // white
+    int  color = 0;
 };
 
-std::vector<AhoNode> nodes;
-
-class AhoCorasick {
+class Aho_Corasick {
 public:
-    // void AhoCorasick(int par = -1, char edge = 10) {
-    //     nodes[0].parent      = -1;
-    //     nodes[0].suffix_link = -1;
-    //     size                 =  1;
 
-    //     std::fill(std::begin(nodes[0].sons), std::end(nodes[0].sons), -1);
-    //     std::fill(std::begin(nodes[0].sons), std::end(nodes[0].sons), -1);
-    //     // memset(nodes[0].sons         , 255, sizeof(nodes[0].sons));
-    //     // memset(nodes[0].transmissions, 255, sizeof(nodes[0].transmissions));
-    // }
-
-    void addString(const std::string_view str) {
-        int cur_node = 0;
-
-        for (size_t i = 0; i < str.length(); i++) {
-            char edge = str[i];
-            // std::cerr << nodes[cur_node].sons[edge] << '\n';
-            if (nodes[cur_node].sons[edge] == -1) {
-                nodes[cur_node].sons[edge] = nodes.size();
-                nodes.push_back(AhoNode(cur_node, edge));
-            }
-            // std::cerr << nodes[cur_node].sons[edge] << '\n';
-            cur_node = nodes[cur_node].sons[edge];
-        }
-
-        nodes[cur_node].is_leaf = true;
+    Aho_Corasick() {
+        nodes.push_back(new AhoNode);
     }
 
-public:
-    int transmit(int node_ind, char edge) {
-        if (nodes[node_ind].transmissions[edge] == -1) {
-            if (nodes[node_ind].sons[edge] != -1)
-                nodes[node_ind].transmissions[edge] = nodes[node_ind].sons[edge];
-            else {
-                if (node_ind == 0)
-                    nodes[node_ind].transmissions[edge] = 0; 
-                else 
-                    nodes[node_ind].transmissions[edge] = transmit(getLink(node_ind), edge);
+    void findMaskOccur(std::string_view mask_str, char mask_symb, std::string_view substr, std::vector<int>& result) {
+        std::vector<size_t> start_positions;
+        std::vector<size_t> substr_occurs(substr.size(), 0);
+
+        splitToSubstrings(mask_str, mask_symb, start_positions);
+        // init();
+
+        // std::cout << substrings.size() << '\n';
+        // int cnt = 0;
+        // for (auto val : substrings) {
+        //     std::cout << val << start_positions[cnt++] << '\n';
+        // }
+
+        findOccur(substr, start_positions, substr_occurs);
+
+        for (size_t i = 0; i < substr_occurs.size(); i++) {
+            // std::cout << i << ' ' << substr_occurs[i] << '\n';
+            // std::cout << substrings.size() 
+            if (substr_occurs[i] == substrings.size()) {
+                result.push_back(i);
             }
         }
-
-        return nodes[node_ind].transmissions[edge];
     }
 
-    int getLink(int node_ind) {
-        if (nodes[node_ind].suffix_link == -1) {
-            if (node_ind == 0 || nodes[node_ind].parent == 0)
-                nodes[node_ind].suffix_link = 0;
-            else
-                nodes[node_ind].suffix_link = transmit(getLink(nodes[node_ind].parent), nodes[node_ind].edge);
-        } 
+public:
 
-        return nodes[node_ind].suffix_link;
+    void findOccur(const std::string_view str, std::vector<size_t>& start_positions, std::vector<size_t>& substr_occurs) {
+        int cur = 0;
+
+        for (size_t i = 0; i < str.size(); i++) {
+            cur = go(cur, str[i]);
+
+            // if (nodes[cur]->is_leaf) {
+            //     if (i - start_positions[j] - substrings[j].size() + 1 < str.size())
+            //         substr_occurs[i - start_positions[j] - substrings[j].size() + 1]++;
+            // }
+
+            for (const auto j : nodes[cur]->str_indexes) {
+                // std::cout << j << ' ';
+                if (nodes[cur]->is_leaf) {
+                    if (i - start_positions[j] - substrings[j].size() + 1 < str.size())
+                        substr_occurs[i - start_positions[j] - substrings[j].size() + 1]++;
+                }
+            }
+
+            int tmp = link(cur);
+            int cnt = 0;
+            while (tmp != 0) {
+                // fprintf(stderr, "%d\n", tmp);
+                for (const auto j : nodes[tmp]->str_indexes) {
+                    // std::cout << j << ' ';
+                    // if (nodes[cur]->is_leaf) {
+                        if (i - start_positions[j] - substrings[j].size() + 1 < str.size())
+                            substr_occurs[i - start_positions[j] - substrings[j].size() + 1]++;
+                    // }
+                }
+
+                tmp = link(tmp);
+            }
+            // std::cout << '\n';
+        }
     }
+
+    void splitToSubstrings(std::string_view mask_str, char mask_symb, std::vector<size_t>& start_positions) {
+        std::string add_str;
+        bool is_start = true;
+
+        size_t str_cnt = 0;
+
+        for (size_t i = 0; i < mask_str.size(); i++) {
+            if (mask_str[i] == mask_symb) {
+                if (add_str.size() != 0) {
+                    addStr(str_cnt++, add_str);
+                    substrings.push_back(add_str);
+                }
+
+                add_str.clear();
+                is_start = true;
+            } else {
+                if (is_start) {
+                    start_positions.push_back(i);
+                    is_start = false;
+                }
+                add_str += mask_str[i];
+            }
+        }
+
+        if (add_str.size() != 0) {
+            addStr(str_cnt++, add_str);
+            substrings.push_back(add_str);
+        }
+    }
+
+    int go(int vert, char edge) {
+        if (vert == -1 || nodes[vert]->is_leaf) return -1;
+        
+        if (nodes[vert]->transitions[edge] == -1) {
+            if (nodes[vert]->children[edge] != -1) {
+                nodes[vert]->transitions[edge] = nodes[vert]->children[edge];
+            } else {
+                if (vert == 0) {
+                    nodes[vert]->transitions[edge] = 0;
+                } else {
+                    nodes[vert]->transitions[edge] = go(link(vert), edge);
+                }
+            }
+        }
+
+        return nodes[vert]->transitions[edge];
+    }
+
+    int link(int vert) {
+        if (nodes[vert]->suf_link == -1) {
+            if (vert == 0 || nodes[vert]->parent == 0) {
+                nodes[vert]->suf_link = 0;
+            } else {
+                nodes[vert]->suf_link = go(link(nodes[vert]->parent), nodes[vert]->edge);
+            }
+        }
+
+        return nodes[vert]->suf_link;
+    }
+
+    void addStr(const size_t index, const std::string& str) {
+        int cur = 0;
+        for (const auto symbol : str) {
+            if (nodes[cur]->children[symbol] == -1) {
+                nodes[cur]->children[symbol] = nodes.size();
+                nodes.push_back(new AhoNode(cur, symbol));
+            }
+
+            cur = nodes[cur]->children[symbol];
+        }
+
+        nodes[cur]->is_leaf = true;
+        nodes[cur]->str_indexes.push_back(index);
+    }
+
+    bool runDfs(int vert) {
+        nodes[vert]->color = 1;
+
+        for (const auto symbol : {'0', '1'}) {
+            int child = go(vert, symbol);
+
+            if (child == -1) continue;
+
+            if (nodes[child]->color == 0) {
+                if (runDfs(child)) return true;
+            } else if (nodes[child]->color == 1) {
+                if (nodes[child]->is_leaf) {
+                    continue;
+                }
+                return true;
+            }
+        }
+
+        nodes[vert]->color = 2;
+        return false;
+    } 
+
+private:
+    std::vector<AhoNode*>    nodes;
+    std::vector<std::string> substrings;
 };
-
-bool doDFS(AhoCorasick& aho, int cur_node) {
-    nodes[cur_node].color = 1; // grey
-    if (nodes[cur_node].is_leaf) return false;
-
-    for (int i = 0; i < alphabet_len; i++) {
-        // if (nodes[cur_node].suffix_link == -1) continue;
-        int to = aho.transmit(cur_node, i);
-
-        if (nodes[to].color == 0) {
-            if (doDFS(aho, to)) return true;
-        } else if (nodes[to].color == 1) {
-            if (nodes[to].is_leaf) return false;
-            return true;
-        }
-    }
-    nodes[cur_node].color = 2;
-
-    return false;
-}
-
-bool findOccur(std::vector<std::string>& strings) {
-    AhoCorasick aho;
-
-    for (size_t i = 0; i < strings.size(); i++) {
-        aho.addString(strings[i]);
-    }
-    return doDFS(aho, 0);
-}
 
 int main() {
-    std::vector<std::string> viruses;
+    Aho_Corasick aho;
     size_t N = 0;
-    std::cin >> N;
 
-    AhoNode node;
-    nodes.push_back(node);
+    std::cin >> N;
 
     for (size_t i = 0; i < N; i++) {
         std::string str_i;
         std::cin >> str_i;
-
-        viruses.push_back(str_i);
+        aho.addStr(i, str_i);
     }
 
-    if (findOccur(viruses)) {
+    if (aho.runDfs(0)) {
         std::cout << "TAK\n";
     } else {
         std::cout << "NIE\n";
