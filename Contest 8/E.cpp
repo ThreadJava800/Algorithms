@@ -3,49 +3,64 @@
 #include <iostream>
 #include <vector>
 
-void fft(const std::vector<std::complex<double>>& coefficients, std::vector<std::complex<double>>& result, bool is_inverse = false);
+void fft(std::vector<std::complex<double>>& coefficients, bool is_inverse = false);
 
-void fft(const std::vector<std::complex<double>>& coefficients, std::vector<std::complex<double>>& result, bool is_inverse)
+void fft(std::vector<std::complex<double>>& coefficients, bool is_inverse)
 {
     size_t N = coefficients.size();
+    std::vector<std::complex<double>> precalc(N, 0);
+    precalc[0] = 1.0;
 
-    result.resize(N);
-
-    if (N == 0) return;
-    if (N == 1)
+    for (size_t i = 1; i < N; i *= 2)
     {
-        result[0] = coefficients[0];
-        return;
-    }
-
-    std::vector<std::complex<double>>     even,     odd;
-    std::vector<std::complex<double>> res_even, res_odd;
-
-    for (size_t i = 0; i < N; ++i)
-    {
-        if (i % 2 == 1) odd .push_back(coefficients[i]);
-        else            even.push_back(coefficients[i]);
-    }
-
-    fft(even, res_even, is_inverse);
-    fft(odd , res_odd , is_inverse);
-
-    std::complex<double> delta = std::exp(std::complex<double>(0, 2 * M_PI / N));
-    if (is_inverse)      delta = std::complex<double>(1, 0) / delta;
-
-    std::complex<double> temp(1);
-    for (size_t i = 0; i < N / 2; ++i)
-    {
-        result[i]         = even[i] + temp * odd[i];
-        result[i + N / 2] = even[i] - temp * odd[i];
-
         if (is_inverse)
         {
-            result[i]         /= 2;
-            result[i + N / 2] /= 2;
+            precalc[i] = std::polar<double>(1,  2 * M_PI * i / N);
         }
+        else
+        {
+            precalc[i] = std::polar<double>(1, -2 * M_PI * i / N);
+        }
+    }
 
-        temp *= delta;
+    size_t prev = 2;
+    for (size_t i = 3; i < N; ++i)
+    {
+        if (precalc[i] == 0.0)
+        {
+            precalc[i] = precalc[prev] * precalc[i - prev];
+        }
+        else
+        {
+            prev = i;
+        }
+    }
+
+    for (size_t i = N; i > 1; i /= 2)
+    {
+        std::vector<std::complex<double>> new_coeff(N);
+        for (size_t j = 0; j < N; j += i)
+        {
+            for (size_t k = 0; k < i; ++k)
+            {
+                new_coeff[j + i / 2 * (k % 2) + k / 2] = coefficients[j + k]; 
+            }
+        }
+        coefficients = new_coeff;
+    }
+
+    for (size_t i = 2; i <= N; i *= 2)
+    {
+        std::vector<std::complex<double> > new_coeff(N);
+        size_t mul_coeff = N / i;
+        
+        for(int j = 0; j < N; j += i) {
+            for(int k = 0; k < i / 2; ++k) {
+                new_coeff[j + k]         = coefficients[j + k] + precalc[mul_coeff * k] * coefficients[j + i / 2 + k];
+                new_coeff[j + i / 2 + k] = coefficients[j + k] - precalc[mul_coeff * k] * coefficients[j + i / 2 + k];
+            }
+        }
+        coefficients = new_coeff;
     }
 }
 
@@ -67,7 +82,7 @@ public:
 
         for (const auto coeff : poly.coefficients)
         {
-            output << coeff << ' ';
+            output << static_cast<long long>(round(coeff)) << ' ';
         }
         output << '\n';
 
@@ -79,9 +94,9 @@ public:
         size_t arr_size = 0;
         input >> arr_size;
 
-        poly.coefficients.resize(arr_size, 0);
+        poly.coefficients.resize(arr_size + 1, 0);
 
-        for (size_t i = 0; i < arr_size; ++i)
+        for (size_t i = 0; i <= arr_size; ++i)
         {
             input >> poly.coefficients[i];
         }
@@ -95,25 +110,24 @@ public:
         size_t res_size = lhs.coefficients.size() + rhs.coefficients.size() - 1;
         while (arr_size < res_size) arr_size *= 2;
 
-        std::vector<std::complex<double>> lhs_compl    (arr_size, 0), rhs_compl    (arr_size, 0), multiply    (arr_size, 0);
-        std::vector<std::complex<double>> lhs_compl_fft(arr_size, 0), rhs_compl_fft(arr_size, 0), multiply_fft(arr_size, 0);
+        std::vector<std::complex<double>> lhs_compl(arr_size, 0), rhs_compl(arr_size, 0), multiply(arr_size, 0);
         lhs.toComplexVector(lhs_compl);
         rhs.toComplexVector(rhs_compl);
         
-        fft(lhs_compl, lhs_compl_fft);
-        fft(rhs_compl, rhs_compl_fft);
+        fft(lhs_compl);
+        fft(rhs_compl);
 
         for (size_t i = 0; i < arr_size; ++i)
         {
-            multiply[i] = lhs_compl_fft[i] * rhs_compl_fft[i];
+            multiply[i] = lhs_compl[i] * rhs_compl[i];
         }
 
-        fft(multiply, multiply_fft, true);
+        fft(multiply, true);
 
         std::vector<double> res_vec(res_size);
         for (size_t i = 0; i < res_size; ++i)
         {
-            res_vec[i] = multiply_fft[i].real() / arr_size;
+            res_vec[i] = multiply[i].real() / arr_size;
         }
 
         return Polynomial(res_vec);
