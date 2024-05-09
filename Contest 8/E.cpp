@@ -3,9 +3,17 @@
 #include <iostream>
 #include <vector>
 
-void fft(std::vector<std::complex<double>>& coefficients, bool is_inverse = false);
+static const double kEpsilon = 1e-12;
 
-void fft(std::vector<std::complex<double>>& coefficients, bool is_inverse)
+bool compareDoubles(const double val1, const double val2);
+void fft(std::vector<std::complex<double>>& coefficients, const bool is_inverse = false);
+
+bool compareDoubles(const double val1, const double val2)
+{
+    return (val1 - val2) < kEpsilon;
+}
+
+void fft(std::vector<std::complex<double>>& coefficients, const bool is_inverse)
 {
     size_t N = coefficients.size();
     std::vector<std::complex<double>> precalc(N, 0);
@@ -26,7 +34,7 @@ void fft(std::vector<std::complex<double>>& coefficients, bool is_inverse)
     size_t prev = 2;
     for (size_t i = 3; i < N; ++i)
     {
-        if (precalc[i] == 0.0)
+        if (compareDoubles(precalc[i].real(), 0.0) && compareDoubles(precalc[i].imag(), 0.0))
         {
             precalc[i] = precalc[prev] * precalc[i - prev];
         }
@@ -68,11 +76,11 @@ class Polynomial
 {
 public:
 
-    explicit Polynomial()
+    Polynomial()
       :  coefficients ()
     {}
 
-    explicit Polynomial(std::vector<double>& _coefficients)
+    explicit Polynomial(const std::vector<double>& _coefficients)
       :  coefficients (_coefficients)
     {}
 
